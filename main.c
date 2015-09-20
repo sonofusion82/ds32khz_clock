@@ -40,14 +40,6 @@ void interrupt interupt_service_routine(void)
     }
 }
 
-void mydelay(void)
-{
-    //volatile unsigned int x = 10000;
-    //while (x--);
-    __delay_ms(500);
-    return;
-}
-
 /* Main program loop
  * 
  */
@@ -59,9 +51,10 @@ int main(int argc, char** argv)
     // TIMER 1 setting
     // pre-scale 1:1
     // oscillator disable
-    // external input sync
+    // not sync to internal clock
+    // external input
     // timer 1 on
-    T1CON = 0x3;
+    T1CON = 0x7;
     TMR1L = 0x00;
     TMR1H = TMR1H_RELOAD;
     PIE1bits.TMR1IE = 1;
@@ -70,13 +63,8 @@ int main(int argc, char** argv)
     
     while (1)
     {
-        //PORTB = 0xAA;
-        //PORTBbits.RB0 = 0;
-        //mydelay();
-        //PORTB = 0x55;
-        //PORTBbits.RB0 = 1;
-        //mydelay();
-        //PORTBbits.RB0 = toggle ? 0 : 1;
+        // sleep and wait for interrupt
+        SLEEP();
         PORTBbits.RB0 = toggle;
     }
     return (EXIT_SUCCESS);
