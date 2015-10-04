@@ -26,6 +26,7 @@
 #include <stdlib.h>
 
 bit toggle = 0;
+unsigned char bitmask = 0x1;
 
 #define TMR1H_RELOAD 0x80
 
@@ -37,16 +38,29 @@ void interrupt interupt_service_routine(void)
         TMR1H = TMR1H_RELOAD;
         PIR1bits.TMR1IF = 0;
         toggle = toggle ? 0 : 1;
+        
+        bitmask <<= 1;
+        if (!bitmask)
+            bitmask = 1;
     }
 }
 
-/* Main program loop
- * 
- */
-int main(int argc, char** argv)
+void init()
 {
-    TRISBbits.TRISB0 = 0;
-    //PORTB =  0xAA;
+    PORTB = 0;
+    TRISB = 1; // RA0 is broken 
+    
+    ADCON1 = 0x07; // PCFG3:PCFG0 = 0111 => All Digital Ports
+    CMCON = 0x07;
+    PORTA = 0;
+    TRISA = 0;
+
+    PORTCbits.RC3 = 0;
+    PORTCbits.RC4 = 0;
+    PORTCbits.RC5 = 0;
+    TRISCbits.TRISC5 = 0;
+    TRISCbits.TRISC4 = 0;
+    TRISCbits.TRISC3 = 0;
     
     // TIMER 1 setting
     // pre-scale 1:1
@@ -60,12 +74,41 @@ int main(int argc, char** argv)
     PIE1bits.TMR1IE = 1;
     INTCONbits.PEIE = 1;
     ei();
+}
+
+/* Main program loop
+ * 
+ */
+int main(int argc, char** argv)
+{
+    init();
+    
+    static bit commonCathodeToggle = 0;
+    
     
     while (1)
     {
-        // sleep and wait for interrupt
-        SLEEP();
-        PORTBbits.RB0 = toggle;
+        //PORTA = 0x3E;
+        //PORTCbits.RC3 = 1;
+        //PORTB = 0x4;
+        //PORTB = commonCathodeToggle ? 0xAA : 0x55;
+        //PORTA = commonCathodeToggle ? 0xAA : 0x55;
+        PORTBbits.RB1 = toggle ? 1 : 0;
+        PORTBbits.RB0 = toggle ? 0 : 1;
+        
+        
+        if (commonCathodeToggle)
+        {
+            PORTCbits.RC4 = 0;
+            PORTCbits.RC5 = 1;
+            commonCathodeToggle = 0;
+        }
+        else
+        {
+            PORTCbits.RC5 = 0;
+            PORTCbits.RC4 = 1;
+            commonCathodeToggle = 1;
+        }
     }
     return (EXIT_SUCCESS);
 }
