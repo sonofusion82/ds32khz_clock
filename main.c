@@ -37,11 +37,21 @@
 #include <stdlib.h>
 #include <pic16f876a.h>
 
-
+const unsigned char digit1[10][2] = {
+    { 0b00011100, 0b00101100 },  // 0
+    { 0b00011000, 0b00000000 },  // 1
+    { 0b00010100, 0b00111000 },  // 2
+    { 0b00011100, 0b00011000 },  // 3
+    { 0b00011000, 0b00010100 },  // 4
+    { 0b00001100, 0b00011100 },  // 5
+    { 0b00001100, 0b00111100 },  // 6
+    { 0b00011100, 0b00000000 },  // 7
+    { 0b00011100, 0b00111100 },  // 8
+    { 0b00011100, 0b00011100 }   // 9
+};
 
 bit toggle = 0;
-unsigned short bitmask = 0x1;
-char serial_input[64];
+unsigned char count = 0;
 
 #define TMR1H_RELOAD 0x80
 
@@ -54,9 +64,9 @@ void interrupt interupt_service_routine(void)
         PIR1bits.TMR1IF = 0;
         toggle = toggle ? 0 : 1;
         
-        bitmask <<= 1;
-        if (bitmask & 0xC000)
-            bitmask = 1;
+        count++;
+        if (count >= 10)
+            count = 0;
     }
 }
 
@@ -113,22 +123,25 @@ int main(int argc, char** argv)
         //PORTBbits.RB1 = toggle ? 1 : 0;
         //PORTBbits.RB0 = toggle ? 0 : 1;
         //PORTBbits.RB1 = toggle ? 1 : 0;
-        PORTB = (bitmask & 0xFF);
-        PORTA = (bitmask >> 8) & 0x3E; 
-        PORTCbits.RC3 = (bitmask & 0x0100) ? 1 : 0;
+        //PORTB = (bitmask & 0xFF);
+        //PORTA = (bitmask >> 8) & 0x3E; 
+        //PORTCbits.RC3 = (bitmask & 0x0100) ? 1 : 0;
         
-        if (TMR1H & 0b01000000)
+        if (commonCathodeToggle)
         {
             PORTCbits.RC4 = 0;
             PORTCbits.RC5 = 1;
+            PORTB = digit1[count][1];
             commonCathodeToggle = 0;
         }
         else
         {
             PORTCbits.RC5 = 0;
             PORTCbits.RC4 = 1;
+            PORTB = digit1[count][0];
             commonCathodeToggle = 1;
         }
+        PORTBbits.RB1 = (TMR1H & 0b01000000) ? 0 : 1;
         
         __delay_ms(5);
     }
