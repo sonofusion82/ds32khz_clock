@@ -27,11 +27,11 @@ CLEAN_SUBPROJECTS=${CLEAN_SUBPROJECTS_${SUBPROJECTS}}
 PROJECTNAME=Clock.X
 
 # Active Configuration
-DEFAULTCONF=default
+DEFAULTCONF=PIC16F876A
 CONF=${DEFAULTCONF}
 
 # All Configurations
-ALLCONFS=default 
+ALLCONFS=PIC16F876A PIC16F72 
 
 
 # build
@@ -45,13 +45,15 @@ ALLCONFS=default
 
 # clobber
 .clobber-impl: .clobber-pre .depcheck-impl
-	    ${MAKE} SUBPROJECTS=${SUBPROJECTS} CONF=default clean
+	    ${MAKE} SUBPROJECTS=${SUBPROJECTS} CONF=PIC16F876A clean
+	    ${MAKE} SUBPROJECTS=${SUBPROJECTS} CONF=PIC16F72 clean
 
 
 
 # all
 .all-impl: .all-pre .depcheck-impl
-	    ${MAKE} SUBPROJECTS=${SUBPROJECTS} CONF=default build
+	    ${MAKE} SUBPROJECTS=${SUBPROJECTS} CONF=PIC16F876A build
+	    ${MAKE} SUBPROJECTS=${SUBPROJECTS} CONF=PIC16F72 build
 
 
 

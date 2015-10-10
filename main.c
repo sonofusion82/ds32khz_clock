@@ -11,6 +11,7 @@
 // #pragma config statements should precede project file includes.
 // Use project enums instead of #define for ON and OFF.
 
+#ifdef _PIC16F876A_H_
 // CONFIG
 #pragma config FOSC = EXTRC     // Oscillator Selection bits (RC oscillator)
 #pragma config WDTE = OFF       // Watchdog Timer Enable bit (WDT disabled)
@@ -20,7 +21,16 @@
 #pragma config CPD = OFF        // Data EEPROM Memory Code Protection bit (Data EEPROM code protection off)
 #pragma config WRT = OFF        // Flash Program Memory Write Enable bits (Write protection off; all program memory may be written to by EECON control)
 #pragma config CP = OFF         // Flash Program Memory Code Protection bit (Code protection off)
+#endif
 
+#ifdef _PIC16F72_H_
+// CONFIG
+#pragma config FOSC = RC        // Oscillator Selection bits (RC oscillator)
+#pragma config WDTE = ON        // Watchdog Timer Enable bit (WDT enabled)
+#pragma config PWRTE = OFF      // Power-up Timer Enable bit (PWRT disabled)
+#pragma config CP = OFF         // FLASH Program Memory Code Protection bit (Code protection off)
+#pragma config BOREN = ON       // Brown-out Reset Enable bit (BOR enabled)
+#endif
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -48,10 +58,12 @@ void interrupt interupt_service_routine(void)
 void init()
 {
     PORTB = 0;
-    TRISB = 1; // RA0 is broken 
+    TRISB = 0;
     
     ADCON1 = 0x07; // PCFG3:PCFG0 = 0111 => All Digital Ports
+#ifdef _PIC16F876A_H_
     CMCON = 0x07;
+#endif
     PORTA = 0;
     TRISA = 0;
 
@@ -93,8 +105,11 @@ int main(int argc, char** argv)
         //PORTB = 0x4;
         //PORTB = commonCathodeToggle ? 0xAA : 0x55;
         //PORTA = commonCathodeToggle ? 0xAA : 0x55;
-        PORTBbits.RB1 = toggle ? 1 : 0;
-        PORTBbits.RB0 = toggle ? 0 : 1;
+        //PORTBbits.RB1 = toggle ? 1 : 0;
+        //PORTBbits.RB0 = toggle ? 0 : 1;
+        //PORTBbits.RB1 = toggle ? 1 : 0;
+        PORTB = bitmask;
+        
         
         
         if (commonCathodeToggle)

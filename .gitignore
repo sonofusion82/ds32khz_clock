@@ -1,2 +1,6 @@
 /build/default/
 /dist/default/
+/build/PIC16F72/
+/dist/PIC16F72/
+/dist/PIC16F876A/
+/build/PIC16F876A/
