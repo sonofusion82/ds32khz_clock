@@ -61,7 +61,34 @@ const unsigned char digit2[10][2] = {
     { 0b1111, 0b1010 }, // 6
     { 0b0000, 0b1110 }, // 7
     { 0b1111, 0b1110 }, // 8
-    { 0b1110, 0b1110 }, // 9
+    { 0b1110, 0b1110 }  // 9
+};
+
+const unsigned char digit3[10][2] = {
+    { 0b0111, 0b1011 }, // 0
+    { 0b0110, 0b0000 }, // 1
+    { 0b0101, 0b1110 }, // 2
+    { 0b0111, 0b0110 }, // 3
+    { 0b0110, 0b0101 }, // 4
+    { 0b0011, 0b0111 }, // 5
+    { 0b0011, 0b1111 }, // 6
+    { 0b0111, 0b0000 }, // 7
+    { 0b0111, 0b1111 }, // 8
+    { 0b0111, 0b0111 }  // 9
+};
+
+
+const unsigned char digit4[10][2] = {
+    { 0b00000, 0b00000 }, // 0
+    { 0b11000, 0b00000 }, // 1
+    { 0b00000, 0b00000 }, // 2
+    { 0b00000, 0b00000 }, // 3
+    { 0b00000, 0b00000 }, // 4
+    { 0b00000, 0b00000 }, // 5
+    { 0b00000, 0b00000 }, // 6
+    { 0b00000, 0b00000 }, // 7
+    { 0b00000, 0b00000 }, // 8
+    { 0b00000, 0b00000 }  // 9
 };
 
 bit toggle = 0;
@@ -146,10 +173,11 @@ int main(int argc, char** argv)
             PORTCbits.RC4 = 0;
             PORTCbits.RC5 = 1;
             
-            unsigned char PORTB_temp = digit1[count][1];
-            PORTB_temp |= ((digit2[count][1] & 0b111) << 5);
-            PORTB = PORTB_temp;
+            PORTB = digit1[count][1];
+            PORTB |= ((digit2[count][1] & 0b111) << 5);
             PORTCbits.RC3 = (digit2[count][1] & 0b1000) ? 1 : 0;
+            PORTA  = digit3[count][1] << 1;
+            PORTA |= digit4[count][1] << 1;
             
             commonCathodeToggle = 0;
         }
@@ -158,10 +186,11 @@ int main(int argc, char** argv)
             PORTCbits.RC5 = 0;
             PORTCbits.RC4 = 1;
             
-            unsigned char PORTB_temp = digit1[count][0];
-            PORTB_temp |= ((digit2[count][0] & 0b111) << 5);
-            PORTB = PORTB_temp;
+            PORTB  = digit1[count][0];
+            PORTB |= ((digit2[count][0] & 0b111) << 5);
             PORTCbits.RC3 = (digit2[count][0] & 0b1000) ? 1 : 0;
+            PORTA  = digit3[count][0] << 1;
+            PORTA |= digit4[count][0] << 1;
             
             commonCathodeToggle = 1;
         }
