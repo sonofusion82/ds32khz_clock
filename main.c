@@ -35,9 +35,13 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <pic16f876a.h>
+
+
 
 bit toggle = 0;
-unsigned char bitmask = 0x1;
+unsigned short bitmask = 0x1;
+char serial_input[64];
 
 #define TMR1H_RELOAD 0x80
 
@@ -51,7 +55,7 @@ void interrupt interupt_service_routine(void)
         toggle = toggle ? 0 : 1;
         
         bitmask <<= 1;
-        if (!bitmask)
+        if (bitmask & 0xC000)
             bitmask = 1;
     }
 }
@@ -102,16 +106,18 @@ int main(int argc, char** argv)
     while (1)
     {
         //PORTA = 0x3E;
-        //PORTCbits.RC3 = 1;
+        
         //PORTB = 0x4;
         //PORTB = commonCathodeToggle ? 0xAA : 0x55;
         //PORTA = commonCathodeToggle ? 0xAA : 0x55;
         //PORTBbits.RB1 = toggle ? 1 : 0;
         //PORTBbits.RB0 = toggle ? 0 : 1;
         //PORTBbits.RB1 = toggle ? 1 : 0;
-        PORTB = bitmask;
+        PORTB = (bitmask & 0xFF);
+        PORTA = (bitmask >> 8) & 0x3E; 
+        PORTCbits.RC3 = (bitmask & 0x0100) ? 1 : 0;
         
-        if (commonCathodeToggle)
+        if (TMR1H & 0b01000000)
         {
             PORTCbits.RC4 = 0;
             PORTCbits.RC5 = 1;
