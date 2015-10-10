@@ -50,6 +50,20 @@ const unsigned char digit1[10][2] = {
     { 0b00011100, 0b00011100 }   // 9
 };
 
+// digit 2 starts from bit 5
+const unsigned char digit2[10][2] = {
+    { 0b1011, 0b1110 }, // 0  
+    { 0b0000, 0b0110 }, // 1
+    { 0b0111, 0b1100 }, // 2
+    { 0b0110, 0b1110 }, // 3
+    { 0b1100, 0b0110 }, // 4
+    { 0b1110, 0b1010 }, // 5
+    { 0b1111, 0b1010 }, // 6
+    { 0b0000, 0b1110 }, // 7
+    { 0b1111, 0b1110 }, // 8
+    { 0b1110, 0b1110 }, // 9
+};
+
 bit toggle = 0;
 unsigned char count = 0;
 
@@ -112,7 +126,7 @@ int main(int argc, char** argv)
     
     static bit commonCathodeToggle = 0;
     
-    
+    unsigned char loopCount = 0;
     while (1)
     {
         //PORTA = 0x3E;
@@ -127,23 +141,34 @@ int main(int argc, char** argv)
         //PORTA = (bitmask >> 8) & 0x3E; 
         //PORTCbits.RC3 = (bitmask & 0x0100) ? 1 : 0;
         
-        if (commonCathodeToggle)
+        if ((loopCount & 3) == 0)
         {
             PORTCbits.RC4 = 0;
             PORTCbits.RC5 = 1;
-            PORTB = digit1[count][1];
+            
+            unsigned char PORTB_temp = digit1[count][1];
+            PORTB_temp |= ((digit2[count][1] & 0b111) << 5);
+            PORTB = PORTB_temp;
+            PORTCbits.RC3 = (digit2[count][1] & 0b1000) ? 1 : 0;
+            
             commonCathodeToggle = 0;
         }
-        else
+        else if ((loopCount & 3) == 2)
         {
             PORTCbits.RC5 = 0;
             PORTCbits.RC4 = 1;
-            PORTB = digit1[count][0];
+            
+            unsigned char PORTB_temp = digit1[count][0];
+            PORTB_temp |= ((digit2[count][0] & 0b111) << 5);
+            PORTB = PORTB_temp;
+            PORTCbits.RC3 = (digit2[count][0] & 0b1000) ? 1 : 0;
+            
             commonCathodeToggle = 1;
         }
         PORTBbits.RB1 = (TMR1H & 0b01000000) ? 0 : 1;
         
-        __delay_ms(5);
+        __delay_ms(1);
+        loopCount++;
     }
     return (EXIT_SUCCESS);
 }
