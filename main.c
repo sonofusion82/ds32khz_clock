@@ -166,8 +166,8 @@ void init()
     INTCONbits.PEIE = 1;
     
     // UART
-    //SPBRG = 10; // 115200
-    SPBRG = 21; // 57600
+    SPBRG = 10; // 115200
+    //SPBRG = 21; // 57600
     TXEN = 1;
     BRGH = 1;
     SPEN = 1;
@@ -194,7 +194,7 @@ int main(int argc, char** argv)
     
     static bit low_power_enable = 0;
     
-    char rx_msg_buffer[64];
+    char rx_msg_buffer[96];
     unsigned char rx_msg_buffer_index = 0;
     
 #define GET_LOOP_TICK (TMR1L & 0xC0)
@@ -215,10 +215,9 @@ int main(int argc, char** argv)
             display[3] = seconds % 10;
             
             low_power_enable = (seconds >= 30) ? 1 : 0;
-
+            
             if (rx_msg_buffer_index)
             {
-
                 printf("RX:%d:%d:", rx_msg_buffer_index, uart_rx_buffer_watermark);
                 for (unsigned char i = 0; i < rx_msg_buffer_index; i++)
                 {
@@ -234,7 +233,7 @@ int main(int argc, char** argv)
             while (uart_isr_flag);
             
             unsigned char i = 0;
-            while (i < uart_rx_buffer_index)
+            while ((i < uart_rx_buffer_index) && (rx_msg_buffer_index < 96))
             {
                 rx_msg_buffer[rx_msg_buffer_index++] = uart_rx_buffer[i++];
             }
@@ -246,7 +245,6 @@ int main(int argc, char** argv)
                 CREN = 0;
                 CREN = 1;
             }            
-
         }
         
         if (loopTicks != GET_LOOP_TICK)
