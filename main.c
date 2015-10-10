@@ -95,19 +95,47 @@ bit toggle = 0;
 
 #define TMR1H_RELOAD 0x80
 
+char uart_rx_buffer[8];
+unsigned char uart_rx_buffer_index = 0;
+bit uart_isr_flag = 0;
+unsigned char uart_rx_buffer_watermark = 0;
+
 void interrupt interupt_service_routine(void)
 {
     // only process timer-triggered interrupts
-    //if(PIE1bits.TMR1IE && PIR1bits.TMR1IF)
+    if(PIE1bits.TMR1IE && PIR1bits.TMR1IF)
     {
         TMR1H = TMR1H_RELOAD;
         PIR1bits.TMR1IF = 0;
         toggle = 1;
     }
+    
+    if (PIE1bits.RCIE && PIR1bits.RCIF)
+    {
+        uart_isr_flag = 1;
+        while (PIR1bits.RCIF)
+        {
+            uart_rx_buffer[uart_rx_buffer_index] = RCREG;
+            uart_rx_buffer_index = (uart_rx_buffer_index + 1) & 0x7;
+        }
+        if (uart_rx_buffer_watermark < uart_rx_buffer_index)
+        {
+            uart_rx_buffer_watermark = uart_rx_buffer_index;
+        }
+        uart_isr_flag = 0;
+    }
+}
+
+void putch(char data)
+{
+    while( ! TXIF)
+        continue;
+    TXREG = data;
 }
 
 void init()
 {
+    // Initialize GPIOs
     PORTB = 0;
     TRISB = 0;
     
@@ -136,6 +164,16 @@ void init()
     TMR1H = TMR1H_RELOAD;
     PIE1bits.TMR1IE = 1;
     INTCONbits.PEIE = 1;
+    
+    // UART
+    //SPBRG = 10; // 115200
+    SPBRG = 21; // 57600
+    TXEN = 1;
+    BRGH = 1;
+    SPEN = 1;
+    CREN = 1;
+    RCIE = 1;
+    
     ei();
 }
 
@@ -153,52 +191,105 @@ int main(int argc, char** argv)
     unsigned char display[4] = { 0 };
     unsigned char minutes = 0;
     unsigned char seconds = 0;
+    
+    static bit low_power_enable = 0;
+    
+    char rx_msg_buffer[64];
+    unsigned char rx_msg_buffer_index = 0;
+    
+#define GET_LOOP_TICK (TMR1L & 0xC0)
+    unsigned char loopTicks = GET_LOOP_TICK;
+    
     while (1)
     {
         if (toggle)
         {
             toggle = 0;
             timestamp++;
-            minutes = timestamp / 60;
+            minutes = (timestamp / 60) % 20;
             seconds = timestamp % 60;
             
             display[0] = minutes / 10;
             display[1] = minutes % 10;
             display[2] = seconds / 10;
             display[3] = seconds % 10;
-        }
             
+            low_power_enable = (seconds >= 30) ? 1 : 0;
+
+            if (rx_msg_buffer_index)
+            {
+
+                printf("RX:%d:%d:", rx_msg_buffer_index, uart_rx_buffer_watermark);
+                for (unsigned char i = 0; i < rx_msg_buffer_index; i++)
+                {
+                    putch(rx_msg_buffer[i]);
+                }
+                rx_msg_buffer_index = 0;
+            }
+        }
         
-        if ((loopCount & 3) == 0)
+        if (uart_rx_buffer_index)
         {
-            PORTCbits.RC4 = 0;
-            PORTCbits.RC5 = 1;
+            di();
+            while (uart_isr_flag);
             
-            PORTB = digit1[display[3]][1];
-            PORTB |= ((digit2[display[2]][1] & 0b111) << 5);
-            PORTCbits.RC3 = (digit2[display[2]][1] & 0b1000) ? 1 : 0;
-            PORTA  = digit3[display[1]][1] << 1;
-            PORTA |= digit4[display[0]][1] << 1;
+            unsigned char i = 0;
+            while (i < uart_rx_buffer_index)
+            {
+                rx_msg_buffer[rx_msg_buffer_index++] = uart_rx_buffer[i++];
+            }
+            uart_rx_buffer_index = 0;
+            ei();
             
-            commonCathodeToggle = 0;
+            if (OERR || FERR)
+            {
+                CREN = 0;
+                CREN = 1;
+            }            
+
         }
-        else if ((loopCount & 3) == 2)
-        {
-            PORTCbits.RC5 = 0;
-            PORTCbits.RC4 = 1;
-            
-            PORTB  = digit1[display[3]][0];
-            PORTB |= ((digit2[display[2]][0] & 0b111) << 5);
-            PORTCbits.RC3 = (digit2[display[2]][0] & 0b1000) ? 1 : 0;
-            PORTA  = digit3[display[1]][0] << 1;
-            PORTA |= digit4[display[0]][0] << 1;
-            
-            commonCathodeToggle = 1;
-        }
-        PORTBbits.RB1 = (TMR1H & 0b01000000) ? 0 : 1;
         
-        __delay_ms(1);
-        loopCount++;
+        if (loopTicks != GET_LOOP_TICK)
+        {
+            loopCount++;
+            loopTicks = GET_LOOP_TICK;
+            
+            if ((loopCount & 3) == 0)
+            {
+                PORTCbits.RC4 = 0;
+                PORTCbits.RC5 = 1;
+
+                PORTB = digit1[display[3]][1];
+                PORTB |= ((digit2[display[2]][1] & 0b111) << 5);
+                PORTCbits.RC3 = (digit2[display[2]][1] & 0b1000) ? 1 : 0;
+                PORTA  = digit3[display[1]][1] << 1;
+                PORTA |= digit4[display[0]][1] << 1;
+
+                commonCathodeToggle = 0;
+            }
+            else if ((loopCount & 3) == 2)
+            {
+                PORTCbits.RC5 = 0;
+                PORTCbits.RC4 = 1;
+
+                PORTB  = digit1[display[3]][0];
+                PORTB |= ((digit2[display[2]][0] & 0b111) << 5);
+                PORTCbits.RC3 = (digit2[display[2]][0] & 0b1000) ? 1 : 0;
+                PORTA  = digit3[display[1]][0] << 1;
+                PORTA |= digit4[display[0]][0] << 1;
+
+                commonCathodeToggle = 1;
+            }
+            else if (low_power_enable)
+            {
+                PORTB = 0;
+                PORTA = 0;
+                PORTCbits.RC3 = 0;
+            }
+
+            // Blink the center colon LEDs
+            PORTBbits.RB1 = (TMR1H & 0b01000000) ? 0 : 1;
+        }
     }
     return (EXIT_SUCCESS);
 }
