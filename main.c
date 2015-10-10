@@ -4,7 +4,7 @@
  *
  * Created on September 20, 2015, 10:32 AM
  */
-#define _XTAL_FREQ 1316043
+#define _XTAL_FREQ 20000000
 
 #include <xc.h>
 
@@ -13,7 +13,8 @@
 
 #ifdef _PIC16F876A_H_
 // CONFIG
-#pragma config FOSC = EXTRC     // Oscillator Selection bits (RC oscillator)
+//#pragma config FOSC = EXTRC     // Oscillator Selection bits (RC oscillator) with 10Kohm and 33uF
+#pragma config FOSC = HS        // Oscillator Selection bits (HS oscillator)
 #pragma config WDTE = OFF       // Watchdog Timer Enable bit (WDT disabled)
 #pragma config PWRTE = ON       // Power-up Timer Enable bit (PWRT enabled)
 #pragma config BOREN = ON       // Brown-out Reset Enable bit (BOR enabled)
@@ -110,8 +111,6 @@ int main(int argc, char** argv)
         //PORTBbits.RB1 = toggle ? 1 : 0;
         PORTB = bitmask;
         
-        
-        
         if (commonCathodeToggle)
         {
             PORTCbits.RC4 = 0;
@@ -124,6 +123,8 @@ int main(int argc, char** argv)
             PORTCbits.RC4 = 1;
             commonCathodeToggle = 1;
         }
+        
+        __delay_ms(5);
     }
     return (EXIT_SUCCESS);
 }
