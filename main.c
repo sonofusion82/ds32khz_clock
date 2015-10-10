@@ -92,7 +92,6 @@ const unsigned char digit4[10][2] = {
 };
 
 bit toggle = 0;
-unsigned char count = 0;
 
 #define TMR1H_RELOAD 0x80
 
@@ -103,11 +102,7 @@ void interrupt interupt_service_routine(void)
     {
         TMR1H = TMR1H_RELOAD;
         PIR1bits.TMR1IF = 0;
-        toggle = toggle ? 0 : 1;
-        
-        count++;
-        if (count >= 10)
-            count = 0;
+        toggle = 1;
     }
 }
 
@@ -154,30 +149,36 @@ int main(int argc, char** argv)
     static bit commonCathodeToggle = 0;
     
     unsigned char loopCount = 0;
+    unsigned long timestamp = 0;
+    unsigned char display[4] = { 0 };
+    unsigned char minutes = 0;
+    unsigned char seconds = 0;
     while (1)
     {
-        //PORTA = 0x3E;
-        
-        //PORTB = 0x4;
-        //PORTB = commonCathodeToggle ? 0xAA : 0x55;
-        //PORTA = commonCathodeToggle ? 0xAA : 0x55;
-        //PORTBbits.RB1 = toggle ? 1 : 0;
-        //PORTBbits.RB0 = toggle ? 0 : 1;
-        //PORTBbits.RB1 = toggle ? 1 : 0;
-        //PORTB = (bitmask & 0xFF);
-        //PORTA = (bitmask >> 8) & 0x3E; 
-        //PORTCbits.RC3 = (bitmask & 0x0100) ? 1 : 0;
+        if (toggle)
+        {
+            toggle = 0;
+            timestamp++;
+            minutes = timestamp / 60;
+            seconds = timestamp % 60;
+            
+            display[0] = minutes / 10;
+            display[1] = minutes % 10;
+            display[2] = seconds / 10;
+            display[3] = seconds % 10;
+        }
+            
         
         if ((loopCount & 3) == 0)
         {
             PORTCbits.RC4 = 0;
             PORTCbits.RC5 = 1;
             
-            PORTB = digit1[count][1];
-            PORTB |= ((digit2[count][1] & 0b111) << 5);
-            PORTCbits.RC3 = (digit2[count][1] & 0b1000) ? 1 : 0;
-            PORTA  = digit3[count][1] << 1;
-            PORTA |= digit4[count][1] << 1;
+            PORTB = digit1[display[3]][1];
+            PORTB |= ((digit2[display[2]][1] & 0b111) << 5);
+            PORTCbits.RC3 = (digit2[display[2]][1] & 0b1000) ? 1 : 0;
+            PORTA  = digit3[display[1]][1] << 1;
+            PORTA |= digit4[display[0]][1] << 1;
             
             commonCathodeToggle = 0;
         }
@@ -186,11 +187,11 @@ int main(int argc, char** argv)
             PORTCbits.RC5 = 0;
             PORTCbits.RC4 = 1;
             
-            PORTB  = digit1[count][0];
-            PORTB |= ((digit2[count][0] & 0b111) << 5);
-            PORTCbits.RC3 = (digit2[count][0] & 0b1000) ? 1 : 0;
-            PORTA  = digit3[count][0] << 1;
-            PORTA |= digit4[count][0] << 1;
+            PORTB  = digit1[display[3]][0];
+            PORTB |= ((digit2[display[2]][0] & 0b111) << 5);
+            PORTCbits.RC3 = (digit2[display[2]][0] & 0b1000) ? 1 : 0;
+            PORTA  = digit3[display[1]][0] << 1;
+            PORTA |= digit4[display[0]][0] << 1;
             
             commonCathodeToggle = 1;
         }
