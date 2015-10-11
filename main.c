@@ -37,7 +37,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <pic16f876a.h>
+#include <time.h>
+
 
 const unsigned char digit1[10][2] = {
     { 0b00011100, 0b00101100 },  // 0
@@ -186,10 +187,8 @@ int main(int argc, char** argv)
 {
     init();
     
-    static bit commonCathodeToggle = 0;
-    
     unsigned char loopCount = 0;
-    unsigned long timestamp = BUILD_TIME_SINCE_MIDNIGHT;
+    unsigned long timestamp = UNIX_TIMESTAMP;
     unsigned char display[4] = { 0 };
     unsigned char hours = 0;
     unsigned char minutes = 0;
@@ -203,17 +202,19 @@ int main(int argc, char** argv)
 #define GET_LOOP_TICK (TMR1L & 0xC0)
     unsigned char loopTicks = GET_LOOP_TICK;
     
+    time_zone = -(8 * 60); // GMT-8
+    
     while (1)
     {
         if (toggle)
         {
             toggle = 0;
             timestamp++;
-            if (timestamp >= 86400)
-                timestamp = 0;
             
-            hours   = (timestamp / 3600) % 12;
-            minutes = (timestamp / 60) % 60;
+            struct tm * tp = localtime(&timestamp);
+            
+            hours   = tp->tm_hour % 12;
+            minutes = tp->tm_min;
             //seconds = timestamp % 60;
             
             display[0] = hours / 10;
@@ -270,8 +271,6 @@ int main(int argc, char** argv)
                 PORTA |= digit4[display[0]][1] << 1;
                 
                 PORTCbits.RC5 = 1;
-
-                commonCathodeToggle = 0;
             }
             else if ((loopCount & 3) == 2)
             {
@@ -284,8 +283,6 @@ int main(int argc, char** argv)
                 PORTA |= digit4[display[0]][0] << 1;
                 
                 PORTCbits.RC4 = 1;
-
-                commonCathodeToggle = 1;
             }
             else if (low_power_enable)
             {
