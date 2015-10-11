@@ -255,26 +255,28 @@ int main(int argc, char** argv)
             if ((loopCount & 3) == 0)
             {
                 PORTCbits.RC4 = 0;
-                PORTCbits.RC5 = 1;
 
                 PORTB = digit1[display[3]][1];
                 PORTB |= ((digit2[display[2]][1] & 0b111) << 5);
                 PORTCbits.RC3 = (digit2[display[2]][1] & 0b1000) ? 1 : 0;
                 PORTA  = digit3[display[1]][1] << 1;
                 PORTA |= digit4[display[0]][1] << 1;
+                
+                PORTCbits.RC5 = 1;
 
                 commonCathodeToggle = 0;
             }
             else if ((loopCount & 3) == 2)
             {
                 PORTCbits.RC5 = 0;
-                PORTCbits.RC4 = 1;
 
                 PORTB  = digit1[display[3]][0];
                 PORTB |= ((digit2[display[2]][0] & 0b111) << 5);
                 PORTCbits.RC3 = (digit2[display[2]][0] & 0b1000) ? 1 : 0;
                 PORTA  = digit3[display[1]][0] << 1;
                 PORTA |= digit4[display[0]][0] << 1;
+                
+                PORTCbits.RC4 = 1;
 
                 commonCathodeToggle = 1;
             }
