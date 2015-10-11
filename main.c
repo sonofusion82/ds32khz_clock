@@ -8,6 +8,8 @@
 
 #include <xc.h>
 
+#include "current_timestamp.h"
+
 // #pragma config statements should precede project file includes.
 // Use project enums instead of #define for ON and OFF.
 
@@ -187,10 +189,11 @@ int main(int argc, char** argv)
     static bit commonCathodeToggle = 0;
     
     unsigned char loopCount = 0;
-    unsigned long timestamp = 0;
+    unsigned long timestamp = BUILD_TIME_SINCE_MIDNIGHT;
     unsigned char display[4] = { 0 };
+    unsigned char hours = 0;
     unsigned char minutes = 0;
-    unsigned char seconds = 0;
+    //unsigned char seconds = 0;
     
     static bit low_power_enable = 0;
     
@@ -206,15 +209,16 @@ int main(int argc, char** argv)
         {
             toggle = 0;
             timestamp++;
-            minutes = (timestamp / 60) % 20;
-            seconds = timestamp % 60;
+            hours   = (timestamp / 3600) % 12;
+            minutes = (timestamp / 60) % 60;
+            //seconds = timestamp % 60;
             
-            display[0] = minutes / 10;
-            display[1] = minutes % 10;
-            display[2] = seconds / 10;
-            display[3] = seconds % 10;
+            display[0] = hours / 10;
+            display[1] = hours % 10;
+            display[2] = minutes / 10;
+            display[3] = minutes % 10;
             
-            low_power_enable = (seconds >= 30) ? 1 : 0;
+            //low_power_enable = (seconds >= 30) ? 1 : 0;
             
             if (rx_msg_buffer_index)
             {
