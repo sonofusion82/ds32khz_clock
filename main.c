@@ -209,6 +209,9 @@ int main(int argc, char** argv)
         {
             toggle = 0;
             timestamp++;
+            if (timestamp >= 86400)
+                timestamp = 0;
+            
             hours   = (timestamp / 3600) % 12;
             minutes = (timestamp / 60) % 60;
             //seconds = timestamp % 60;
