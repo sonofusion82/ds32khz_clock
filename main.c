@@ -95,6 +95,7 @@ const unsigned char digit4[10][2] = {
 };
 
 bit toggle = 0;
+bit low_power_enable = 0;
 
 #define TMR1H_RELOAD 0x80
 
@@ -158,11 +159,11 @@ void init()
     
     // TIMER 1 setting
     // pre-scale 1:1
-    // oscillator disable
+    // oscillator enable for 32KHz crystal
     // not sync to internal clock
     // external input
     // timer 1 on
-    T1CON = 0x7;
+    T1CON = 0b001111;
     TMR1L = 0x00;
     TMR1H = TMR1H_RELOAD;
     PIE1bits.TMR1IE = 1;
@@ -194,7 +195,7 @@ int main(int argc, char** argv)
     unsigned char minutes = 0;
     //unsigned char seconds = 0;
     
-    static bit low_power_enable = 0;
+    low_power_enable = 0;
     
     char rx_msg_buffer[96];
     unsigned char rx_msg_buffer_index = 0;
