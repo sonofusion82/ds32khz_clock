@@ -28,9 +28,9 @@
 
 #ifdef _PIC16F72_H_
 // CONFIG
-#pragma config FOSC = RC        // Oscillator Selection bits (RC oscillator)
-#pragma config WDTE = ON        // Watchdog Timer Enable bit (WDT enabled)
-#pragma config PWRTE = OFF      // Power-up Timer Enable bit (PWRT disabled)
+#pragma config FOSC = HS        // Oscillator Selection bits (HS oscillator)
+#pragma config WDTE = OFF        // Watchdog Timer Enable bit (WDT disabled)
+#pragma config PWRTE = ON      // Power-up Timer Enable bit (PWRT enabled)
 #pragma config CP = OFF         // FLASH Program Memory Code Protection bit (Code protection off)
 #pragma config BOREN = ON       // Brown-out Reset Enable bit (BOR enabled)
 #endif
@@ -168,8 +168,8 @@ void init()
     TMR1H = TMR1H_RELOAD;
     PIE1bits.TMR1IE = 1;
     INTCONbits.PEIE = 1;
-    
-    // UART
+ 
+     // UART
     SPBRG = 10; // 115200
     //SPBRG = 21; // 57600
     TXEN = 1;
@@ -253,7 +253,7 @@ int main(int argc, char** argv)
             {
                 CREN = 0;
                 CREN = 1;
-            }            
+            }
         }
         
         if (loopTicks != GET_LOOP_TICK)
