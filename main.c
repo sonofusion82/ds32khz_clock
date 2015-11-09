@@ -15,8 +15,8 @@
 
 #ifdef _PIC16F876A_H_
 // CONFIG
-//#pragma config FOSC = EXTRC     // Oscillator Selection bits (RC oscillator) with 10Kohm and 33uF
-#pragma config FOSC = HS        // Oscillator Selection bits (HS oscillator)
+#pragma config FOSC = EXTRC     // Oscillator Selection bits (RC oscillator) with 10Kohm and 22uF
+//#pragma config FOSC = HS        // Oscillator Selection bits (HS oscillator)
 #pragma config WDTE = OFF       // Watchdog Timer Enable bit (WDT disabled)
 #pragma config PWRTE = ON       // Power-up Timer Enable bit (PWRT enabled)
 #pragma config BOREN = ON       // Brown-out Reset Enable bit (BOR enabled)
@@ -99,11 +99,6 @@ bit low_power_enable = 0;
 
 #define TMR1H_RELOAD 0x80
 
-char uart_rx_buffer[8];
-unsigned char uart_rx_buffer_index = 0;
-bit uart_isr_flag = 0;
-unsigned char uart_rx_buffer_watermark = 0;
-
 void interrupt interupt_service_routine(void)
 {
     // only process timer-triggered interrupts
@@ -113,28 +108,6 @@ void interrupt interupt_service_routine(void)
         PIR1bits.TMR1IF = 0;
         toggle = 1;
     }
-    
-    if (PIE1bits.RCIE && PIR1bits.RCIF)
-    {
-        uart_isr_flag = 1;
-        while (PIR1bits.RCIF)
-        {
-            uart_rx_buffer[uart_rx_buffer_index] = RCREG;
-            uart_rx_buffer_index = (uart_rx_buffer_index + 1) & 0x7;
-        }
-        if (uart_rx_buffer_watermark < uart_rx_buffer_index)
-        {
-            uart_rx_buffer_watermark = uart_rx_buffer_index;
-        }
-        uart_isr_flag = 0;
-    }
-}
-
-void putch(char data)
-{
-    while( ! TXIF)
-        continue;
-    TXREG = data;
 }
 
 void init()
@@ -159,25 +132,16 @@ void init()
     
     // TIMER 1 setting
     // pre-scale 1:1
-    // oscillator enable for 32KHz crystal
+    // oscillator disable for DS32KHZ input
     // not sync to internal clock
     // external input
     // timer 1 on
-    T1CON = 0b001111;
+    T1CON = 0b000111;
     TMR1L = 0x00;
     TMR1H = TMR1H_RELOAD;
     PIE1bits.TMR1IE = 1;
     INTCONbits.PEIE = 1;
  
-     // UART
-    SPBRG = 10; // 115200
-    //SPBRG = 21; // 57600
-    TXEN = 1;
-    BRGH = 1;
-    SPEN = 1;
-    CREN = 1;
-    RCIE = 1;
-    
     ei();
 }
 
@@ -189,7 +153,7 @@ int main(int argc, char** argv)
     init();
     
     unsigned char loopCount = 0;
-    unsigned long timestamp = UNIX_TIMESTAMP;
+    unsigned long timestamp = BUILD_TIME_SINCE_MIDNIGHT;
     unsigned char display[4] = { 0 };
     unsigned char hours = 0;
     unsigned char minutes = 0;
@@ -197,13 +161,8 @@ int main(int argc, char** argv)
     
     low_power_enable = 0;
     
-    char rx_msg_buffer[96];
-    unsigned char rx_msg_buffer_index = 0;
-    
 #define GET_LOOP_TICK (TMR1L & 0xC0)
     unsigned char loopTicks = GET_LOOP_TICK;
-    
-    time_zone = -(8 * 60); // GMT-8
     
     while (1)
     {
@@ -212,11 +171,12 @@ int main(int argc, char** argv)
             toggle = 0;
             timestamp++;
             
-            struct tm * tp = localtime(&timestamp);
+            hours   = (timestamp / 3600);
+            minutes = (timestamp - (hours * 3600)) / 60;
             
-            hours   = tp->tm_hour % 12;
-            minutes = tp->tm_min;
-            //seconds = timestamp % 60;
+            // display in 12 hour format
+            if (hours > 12)
+                hours = hours - 12;
             
             display[0] = hours / 10;
             display[1] = hours % 10;
@@ -224,36 +184,6 @@ int main(int argc, char** argv)
             display[3] = minutes % 10;
             
             //low_power_enable = (seconds >= 30) ? 1 : 0;
-            
-            if (rx_msg_buffer_index)
-            {
-                printf("RX:%d:%d:", rx_msg_buffer_index, uart_rx_buffer_watermark);
-                for (unsigned char i = 0; i < rx_msg_buffer_index; i++)
-                {
-                    putch(rx_msg_buffer[i]);
-                }
-                rx_msg_buffer_index = 0;
-            }
-        }
-        
-        if (uart_rx_buffer_index)
-        {
-            di();
-            while (uart_isr_flag);
-            
-            unsigned char i = 0;
-            while ((i < uart_rx_buffer_index) && (rx_msg_buffer_index < 96))
-            {
-                rx_msg_buffer[rx_msg_buffer_index++] = uart_rx_buffer[i++];
-            }
-            uart_rx_buffer_index = 0;
-            ei();
-            
-            if (OERR || FERR)
-            {
-                CREN = 0;
-                CREN = 1;
-            }
         }
         
         if (loopTicks != GET_LOOP_TICK)
