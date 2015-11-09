@@ -17,9 +17,9 @@
 // CONFIG
 #pragma config FOSC = EXTRC     // Oscillator Selection bits (RC oscillator) with 10Kohm and 22uF
 //#pragma config FOSC = HS        // Oscillator Selection bits (HS oscillator)
-#pragma config WDTE = OFF       // Watchdog Timer Enable bit (WDT disabled)
-#pragma config PWRTE = ON       // Power-up Timer Enable bit (PWRT enabled)
-#pragma config BOREN = ON       // Brown-out Reset Enable bit (BOR enabled)
+#pragma config WDTE = ON       // Watchdog Timer Enable bit (WDT enabled)
+#pragma config PWRTE = OFF       // Power-up Timer Enable bit (PWRT disabled)
+#pragma config BOREN = OFF       // Brown-out Reset Enable bit (BOR disabled)
 #pragma config LVP = OFF        // Low-Voltage (Single-Supply) In-Circuit Serial Programming Enable bit (RB3 is digital I/O, HV on MCLR must be used for programming)
 #pragma config CPD = OFF        // Data EEPROM Memory Code Protection bit (Data EEPROM code protection off)
 #pragma config WRT = OFF        // Flash Program Memory Write Enable bits (Write protection off; all program memory may be written to by EECON control)
@@ -28,11 +28,11 @@
 
 #ifdef _PIC16F72_H_
 // CONFIG
-#pragma config FOSC = HS        // Oscillator Selection bits (HS oscillator)
-#pragma config WDTE = OFF        // Watchdog Timer Enable bit (WDT disabled)
-#pragma config PWRTE = ON      // Power-up Timer Enable bit (PWRT enabled)
+#pragma config FOSC = RC        // Oscillator Selection bits (RC oscillator)
+#pragma config WDTE = ON        // Watchdog Timer Enable bit (WDT enabled)
+#pragma config PWRTE = OFF      // Power-up Timer Enable bit (PWRT disabled)
 #pragma config CP = OFF         // FLASH Program Memory Code Protection bit (Code protection off)
-#pragma config BOREN = ON       // Brown-out Reset Enable bit (BOR enabled)
+#pragma config BOREN = OFF       // Brown-out Reset Enable bit (BOR disabled)
 #endif
 
 #include <stdio.h>
@@ -94,7 +94,8 @@ const unsigned char digit4[10][2] = {
     { 0b00000, 0b00000 }  // 9
 };
 
-bit toggle = 0;
+bit tmr1_ticked = 0;
+bit display_ticked = 0;
 bit low_power_enable = 0;
 
 #define TMR1H_RELOAD 0x80
@@ -106,7 +107,7 @@ void interrupt interupt_service_routine(void)
     {
         TMR1H = TMR1H_RELOAD;
         PIR1bits.TMR1IF = 0;
-        toggle = 1;
+        tmr1_ticked = 1;
     }
 }
 
@@ -164,28 +165,56 @@ int main(int argc, char** argv)
 #define GET_LOOP_TICK (TMR1L & 0xC0)
     unsigned char loopTicks = GET_LOOP_TICK;
     
+    unsigned char state = 0;
+    
     while (1)
     {
-        if (toggle)
+        // Clock calculation block
+        // Uses a state machine to break the operation into smaller chunks to
+        // fix display flickering when calculation took too long and it impacts
+        // the display refresh periods
+        if (display_ticked)
         {
-            toggle = 0;
-            timestamp++;
+            display_ticked = 0;
             
-            hours   = (timestamp / 3600);
-            minutes = (timestamp - (hours * 3600)) / 60;
-            
-            // display in 12 hour format
-            if (hours > 12)
-                hours = hours - 12;
-            
-            display[0] = hours / 10;
-            display[1] = hours % 10;
-            display[2] = minutes / 10;
-            display[3] = minutes % 10;
-            
-            //low_power_enable = (seconds >= 30) ? 1 : 0;
+            switch (state)
+            {
+                default:
+                case 0:
+                    if (tmr1_ticked)
+                    {
+                        tmr1_ticked = 0;
+                        timestamp++;
+
+                        hours   = (timestamp / 3600);
+                        state = 1;
+                    }
+                    break;
+                case 1:
+                    minutes = (timestamp - (hours * 3600)) / 60;
+
+                    // display in 12 hour format
+                    if (hours > 12)
+                        hours = hours - 12;
+                    state = 2;
+                    break;
+
+                case 2:
+                    display[0] = hours / 10;
+                    display[1] = hours % 10;
+                    state = 3;
+                    break;
+                    
+                case 3:
+                    display[2] = minutes / 10;
+                    display[3] = minutes % 10;
+                    state = 0;
+                    break;
+                    //low_power_enable = (seconds >= 30) ? 1 : 0;
+            }
         }
         
+        // Display block
         if (loopTicks != GET_LOOP_TICK)
         {
             loopCount++;
@@ -224,7 +253,11 @@ int main(int argc, char** argv)
 
             // Blink the center colon LEDs
             PORTBbits.RB1 = (TMR1H & 0b01000000) ? 0 : 1;
+            
+            display_ticked = 1;
         }
+        
+        CLRWDT();
     }
     return (EXIT_SUCCESS);
 }
