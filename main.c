@@ -4,11 +4,39 @@
  *
  * Created on September 20, 2015, 10:32 AM
  */
-#define _XTAL_FREQ 20000000
 
+#ifdef SDCC
+#define NO_BIT_DEFINES
+#include <pic16f72.h>
+#else
+//#define _XTAL_FREQ 20000000
 #include <xc.h>
+#endif
 
 #include "current_timestamp.h"
+
+#ifdef SDCC
+
+#ifdef __PIC16F876A_H__
+static __code unsigned short __at (_CONFIG) config_word = \
+    _FOSC_EXTRC & 
+    _WDTE_ON & 
+    _PWRTE_OFF & 
+    _CP_OFF & 
+    _BOREN_OFF & 
+    _WRT_OFF & 
+    _DEBUG_OFF & 
+    _LVP_OFF;
+#else
+static __code unsigned short __at (_CONFIG) config_word = \
+    _FOSC_RC & 
+    _WDTE_ON & 
+    _PWRTE_OFF & 
+    _CP_OFF & 
+    _BOREN_OFF;
+#endif
+
+#else // XC8 config
 
 // #pragma config statements should precede project file includes.
 // Use project enums instead of #define for ON and OFF.
@@ -20,7 +48,7 @@
 #pragma config WDTE = ON       // Watchdog Timer Enable bit (WDT enabled)
 #pragma config PWRTE = OFF       // Power-up Timer Enable bit (PWRT disabled)
 #pragma config BOREN = OFF       // Brown-out Reset Enable bit (BOR disabled)
-#pragma config LVP = OFF        // Low-Voltage (Single-Supply) In-Circuit Serial Programming Enable bit (RB3 is digital I/O, HV on MCLR must be used for programming)
+#pragma config LVP = OFF        // Low-Voltage (Single-Supply) In-Circuit Serial Programming Enable bit (RB3 is digital I/O, HV on MCLR must be used for programming))
 #pragma config CPD = OFF        // Data EEPROM Memory Code Protection bit (Data EEPROM code protection off)
 #pragma config WRT = OFF        // Flash Program Memory Write Enable bits (Write protection off; all program memory may be written to by EECON control)
 #pragma config CP = OFF         // Flash Program Memory Code Protection bit (Code protection off)
@@ -35,74 +63,81 @@
 #pragma config BOREN = OFF       // Brown-out Reset Enable bit (BOR disabled)
 #endif
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
-
+#endif /* SDCC */
 
 const unsigned char digit1[10][2] = {
-    { 0b00011100, 0b00101100 },  // 0
-    { 0b00011000, 0b00000000 },  // 1
-    { 0b00010100, 0b00111000 },  // 2
-    { 0b00011100, 0b00011000 },  // 3
-    { 0b00011000, 0b00010100 },  // 4
-    { 0b00001100, 0b00011100 },  // 5
-    { 0b00001100, 0b00111100 },  // 6
-    { 0b00011100, 0b00000000 },  // 7
-    { 0b00011100, 0b00111100 },  // 8
-    { 0b00011100, 0b00011100 }   // 9
+    { 0b00011100, 0b00101100 },  /* 0 */
+    { 0b00011000, 0b00000000 },  /* 1 */
+    { 0b00010100, 0b00111000 },  /* 2 */
+    { 0b00011100, 0b00011000 },  /* 3 */
+    { 0b00011000, 0b00010100 },  /* 4 */
+    { 0b00001100, 0b00011100 },  /* 5 */
+    { 0b00001100, 0b00111100 },  /* 6 */
+    { 0b00011100, 0b00000000 },  /* 7 */
+    { 0b00011100, 0b00111100 },  /* 8 */
+    { 0b00011100, 0b00011100 }   /* 9 */
 };
 
-// digit 2 starts from bit 5
+/* digit 2 starts from bit 5 */
 const unsigned char digit2[10][2] = {
-    { 0b1011, 0b1110 }, // 0  
-    { 0b0000, 0b0110 }, // 1
-    { 0b0111, 0b1100 }, // 2
-    { 0b0110, 0b1110 }, // 3
-    { 0b1100, 0b0110 }, // 4
-    { 0b1110, 0b1010 }, // 5
-    { 0b1111, 0b1010 }, // 6
-    { 0b0000, 0b1110 }, // 7
-    { 0b1111, 0b1110 }, // 8
-    { 0b1110, 0b1110 }  // 9
+    { 0b1011, 0b1110 }, /* 0 */
+    { 0b0000, 0b0110 }, /* 1 */
+    { 0b0111, 0b1100 }, /* 2 */
+    { 0b0110, 0b1110 }, /* 3 */
+    { 0b1100, 0b0110 }, /* 4 */
+    { 0b1110, 0b1010 }, /* 5 */
+    { 0b1111, 0b1010 }, /* 6 */
+    { 0b0000, 0b1110 }, /* 7 */
+    { 0b1111, 0b1110 }, /* 8 */
+    { 0b1110, 0b1110 }  /* 9 */
 };
 
 const unsigned char digit3[10][2] = {
-    { 0b0111, 0b1011 }, // 0
-    { 0b0110, 0b0000 }, // 1
-    { 0b0101, 0b1110 }, // 2
-    { 0b0111, 0b0110 }, // 3
-    { 0b0110, 0b0101 }, // 4
-    { 0b0011, 0b0111 }, // 5
-    { 0b0011, 0b1111 }, // 6
-    { 0b0111, 0b0000 }, // 7
-    { 0b0111, 0b1111 }, // 8
-    { 0b0111, 0b0111 }  // 9
+    { 0b0111, 0b1011 }, /* 0 */
+    { 0b0110, 0b0000 }, /* 1 */
+    { 0b0101, 0b1110 }, /* 2 */
+    { 0b0111, 0b0110 }, /* 3 */
+    { 0b0110, 0b0101 }, /* 4 */
+    { 0b0011, 0b0111 }, /* 5 */
+    { 0b0011, 0b1111 }, /* 6 */
+    { 0b0111, 0b0000 }, /* 7 */
+    { 0b0111, 0b1111 }, /* 8 */
+    { 0b0111, 0b0111 }  /* 9 */
 };
 
 
 const unsigned char digit4[10][2] = {
-    { 0b00000, 0b00000 }, // 0
-    { 0b11000, 0b00000 }, // 1
-    { 0b00000, 0b00000 }, // 2
-    { 0b00000, 0b00000 }, // 3
-    { 0b00000, 0b00000 }, // 4
-    { 0b00000, 0b00000 }, // 5
-    { 0b00000, 0b00000 }, // 6
-    { 0b00000, 0b00000 }, // 7
-    { 0b00000, 0b00000 }, // 8
-    { 0b00000, 0b00000 }  // 9
+    { 0b00000, 0b00000 }, /* 0 */
+    { 0b11000, 0b00000 }, /* 1 */
+    { 0b00000, 0b00000 }, /* 2 */
+    { 0b00000, 0b00000 }, /* 3 */
+    { 0b00000, 0b00000 }, /* 4 */
+    { 0b00000, 0b00000 }, /* 5 */
+    { 0b00000, 0b00000 }, /* 6 */
+    { 0b00000, 0b00000 }, /* 7 */
+    { 0b00000, 0b00000 }, /* 8 */
+    { 0b00000, 0b00000 }  /* 9 */
 };
+ 
 
-bit tmr1_ticked = 0;
-bit display_ticked = 0;
-bit low_power_enable = 0;
+
+unsigned char tmr1_ticked = 0;
+unsigned char display_ticked = 0;
+unsigned char low_power_enable = 0;
 
 #define TMR1H_RELOAD 0x80
 
+#ifdef SDCC
+
+#define CLRWDT()  __asm clrwdt __endasm
+#define ei()  INTCONbits.GIE = 1
+
+static void interupt_service_routine (void) __interrupt 0
+#else
 void interrupt interupt_service_routine(void)
+#endif
 {
-    // only process timer-triggered interrupts
+    /* only process timer-triggered interrupts */
     if(PIE1bits.TMR1IE && PIR1bits.TMR1IF)
     {
         TMR1H = TMR1H_RELOAD;
@@ -113,12 +148,12 @@ void interrupt interupt_service_routine(void)
 
 void init()
 {
-    // Initialize GPIOs
+    /* Initialize GPIOs */
     PORTB = 0;
     TRISB = 0;
     
-    ADCON1 = 0x07; // PCFG3:PCFG0 = 0111 => All Digital Ports
-#ifdef _PIC16F876A_H_
+    ADCON1 = 0x07; /* PCFG3:PCFG0 = 0111 => All Digital Ports */
+#if defined(_PIC16F876A_H_) || defined(__PIC16F876A_H__)
     CMCON = 0x07;
 #endif
     PORTA = 0;
@@ -131,12 +166,13 @@ void init()
     TRISCbits.TRISC4 = 0;
     TRISCbits.TRISC3 = 0;
     
-    // TIMER 1 setting
-    // pre-scale 1:1
-    // oscillator disable for DS32KHZ input
-    // not sync to internal clock
-    // external input
-    // timer 1 on
+    /* TIMER 1 setting
+     * pre-scale 1:1
+     * oscillator disable for DS32KHZ input
+     * not sync to internal clock
+     * external input
+     * timer 1 on
+     */
     T1CON = 0b000111;
     TMR1L = 0x00;
     TMR1H = TMR1H_RELOAD;
@@ -146,33 +182,34 @@ void init()
     ei();
 }
 
+#define GET_LOOP_TICK (TMR1L & 0xC0)
+
 /* Main program loop
  * 
  */
-int main(int argc, char** argv)
+void main()
 {
-    init();
-    
     unsigned char loopCount = 0;
     unsigned long timestamp = BUILD_TIME_SINCE_MIDNIGHT;
     unsigned char display[4] = { 0 };
     unsigned char hours = 0;
     unsigned char minutes = 0;
     //unsigned char seconds = 0;
-    
-    low_power_enable = 0;
-    
-#define GET_LOOP_TICK (TMR1L & 0xC0)
     unsigned char loopTicks = GET_LOOP_TICK;
-    
     unsigned char state = 0;
+    
+    long temp = 0;
+    
+    init();
+    low_power_enable = 0;
     
     while (1)
     {
-        // Clock calculation block
-        // Uses a state machine to break the operation into smaller chunks to
-        // fix display flickering when calculation took too long and it impacts
-        // the display refresh periods
+        /* Clock calculation block
+         * Uses a state machine to break the operation into smaller chunks to
+         * fix display flickering when calculation took too long and it impacts
+         * the display refresh periods
+         */
         if (display_ticked)
         {
             display_ticked = 0;
@@ -190,31 +227,37 @@ int main(int argc, char** argv)
                         state = 1;
                     }
                     break;
+                    
                 case 1:
-                    minutes = (timestamp - (hours * 3600)) / 60;
-
-                    // display in 12 hour format
-                    if (hours > 12)
-                        hours = hours - 12;
+                    temp = (timestamp - (hours * 3600l));
                     state = 2;
                     break;
-
+                    
                 case 2:
-                    display[0] = hours / 10;
-                    display[1] = hours % 10;
+                    minutes =  temp / 60;
+
+                    /* display in 12 hour format */
+                    if (hours > 12)
+                        hours = hours - 12;
                     state = 3;
                     break;
-                    
+
                 case 3:
+                    display[0] = hours / 10;
+                    display[1] = hours % 10;
+                    state = 4;
+                    break;
+                    
+                case 4:
                     display[2] = minutes / 10;
                     display[3] = minutes % 10;
                     state = 0;
                     break;
-                    //low_power_enable = (seconds >= 30) ? 1 : 0;
+                    /* low_power_enable = (seconds >= 30) ? 1 : 0; */
             }
         }
         
-        // Display block
+        /* Display block */
         if (loopTicks != GET_LOOP_TICK)
         {
             loopCount++;
@@ -251,7 +294,7 @@ int main(int argc, char** argv)
                 PORTCbits.RC3 = 0;
             }
 
-            // Blink the center colon LEDs
+            /* Blink the center colon LEDs */
             PORTBbits.RB1 = (TMR1H & 0b01000000) ? 0 : 1;
             
             display_ticked = 1;
@@ -259,6 +302,7 @@ int main(int argc, char** argv)
         
         CLRWDT();
     }
-    return (EXIT_SUCCESS);
+    
+    return;
 }
 

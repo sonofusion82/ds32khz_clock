@@ -71,7 +71,20 @@ LDLIBSOPTIONS=
 # fixDeps replaces a bunch of sed/cat/printf statements that slow down the build
 FIXDEPS=fixDeps
 
-.build-conf:  ${BUILD_SUBPROJECTS}
+# The following macros may be used in the pre and post step lines
+Device=PIC16F72
+ProjectDir=/home/ymchen/Electronics/MPLABXProjects/Clock.X
+ConfName=PIC16F72
+ImagePath=dist/PIC16F72/${IMAGE_TYPE}/Clock.X.${IMAGE_TYPE}.${OUTPUT_SUFFIX}
+ImageDir=dist/PIC16F72/${IMAGE_TYPE}
+ImageName=Clock.X.${IMAGE_TYPE}.${OUTPUT_SUFFIX}
+ifeq ($(TYPE_IMAGE), DEBUG_RUN)
+IsDebug="true"
+else
+IsDebug="false"
+endif
+
+.build-conf:  .pre ${BUILD_SUBPROJECTS}
 ifneq ($(INFORMATION_MESSAGE), )
 	@echo $(INFORMATION_MESSAGE)
 endif
@@ -121,6 +134,11 @@ dist/${CND_CONF}/${IMAGE_TYPE}/Clock.X.${IMAGE_TYPE}.${OUTPUT_SUFFIX}: ${OBJECTF
 	
 endif
 
+.pre:
+	@echo "--------------------------------------"
+	@echo "User defined pre-build step: [./generate_current_timestamp.py]"
+	@./generate_current_timestamp.py
+	@echo "--------------------------------------"
 
 # Subprojects
 .build-subprojects:

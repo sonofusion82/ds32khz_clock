@@ -4,3 +4,8 @@
 /dist/PIC16F72/
 /dist/PIC16F876A/
 /build/PIC16F876A/
+/build/PIC16F72_SDCC/
+/dist/PIC16F72_SDCC/
+/dist/PIC16F876A_SDCC/
+/build/PIC16F876A_SDCC/
+nbproject/private/
