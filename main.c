@@ -120,10 +120,7 @@ const unsigned char digit4[10][2] = {
 };
  
 
-
-unsigned char tmr1_ticked = 0;
-unsigned char display_ticked = 0;
-unsigned char low_power_enable = 0;
+volatile unsigned char tmr1_ticked = 0;
 
 #define TMR1H_RELOAD 0x80
 
@@ -197,11 +194,12 @@ void main()
     //unsigned char seconds = 0;
     unsigned char loopTicks = GET_LOOP_TICK;
     unsigned char state = 0;
-    
+    unsigned char display_ticked = 0;
+    unsigned char low_power_enable = 0;
+
     long temp = 0;
     
     init();
-    low_power_enable = 0;
     
     while (1)
     {
@@ -221,8 +219,15 @@ void main()
                     if (tmr1_ticked)
                     {
                         tmr1_ticked = 0;
+                        
                         timestamp++;
-
+                        // 24 hour wrap around
+                        // 60 * 60 * 24
+                        if (timestamp > 86400l)
+                        {
+                            timestamp = 0;
+                        }
+                        
                         hours   = (timestamp / 3600);
                         state = 1;
                     }
