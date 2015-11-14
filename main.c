@@ -279,7 +279,7 @@ void main()
                     
                 case 5:
                     // lower power mode between 12am to 5am
-                    if (hours < 5)
+                    if (timestamp < (5*3600L))
                     {
                         low_power_enable = 1;
                     }
