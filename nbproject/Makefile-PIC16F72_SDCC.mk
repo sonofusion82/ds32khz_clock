@@ -96,13 +96,13 @@ ifeq ($(TYPE_IMAGE), DEBUG_RUN)
 ${OBJECTDIR}/main.o: main.c  nbproject/Makefile-${CND_CONF}.mk
 	${MKDIR} ${OBJECTDIR} 
 	${RM} ${OBJECTDIR}/main.o 
-	${MP_CC} --debug-ralloc --use-non-free --pstack-model=small --opt-code-speed -c -mpic14 -p16f72 main.c  -o${OBJECTDIR}/main.o
+	${MP_CC} --debug-ralloc --use-non-free --no-pcode-opt --pstack-model=small --opt-code-speed -c -mpic14 -p16f72 main.c  -o${OBJECTDIR}/main.o
 	
 else
 ${OBJECTDIR}/main.o: main.c  nbproject/Makefile-${CND_CONF}.mk
 	${MKDIR} ${OBJECTDIR} 
 	${RM} ${OBJECTDIR}/main.o 
-	${MP_CC} --debug-ralloc --use-non-free --pstack-model=small --opt-code-speed -c -mpic14 -p16f72 main.c  -o${OBJECTDIR}/main.o
+	${MP_CC} --debug-ralloc --use-non-free --no-pcode-opt --pstack-model=small --opt-code-speed -c -mpic14 -p16f72 main.c  -o${OBJECTDIR}/main.o
 	
 endif
 
@@ -111,17 +111,17 @@ endif
 ifeq ($(TYPE_IMAGE), DEBUG_RUN)
 dist/${CND_CONF}/${IMAGE_TYPE}/Clock.X.${IMAGE_TYPE}.${OUTPUT_SUFFIX}: ${OBJECTFILES}  nbproject/Makefile-${CND_CONF}.mk    
 	${MKDIR} dist/${CND_CONF}/${IMAGE_TYPE} 
-	${MP_CC}  --debug-ralloc -Wl-c -Wl-m --use-non-free --pstack-model=small --opt-code-speed -mpic14 -p16f72 ${OBJECTFILES}  -odist/${CND_CONF}/${IMAGE_TYPE}/Clock.X.${IMAGE_TYPE}.${OUTPUT_SUFFIX} 
+	${MP_CC}  --debug-ralloc -Wl-c -Wl-m --use-non-free --no-pcode-opt --pstack-model=small --opt-code-speed -mpic14 -p16f72 ${OBJECTFILES}  -odist/${CND_CONF}/${IMAGE_TYPE}/Clock.X.${IMAGE_TYPE}.${OUTPUT_SUFFIX} 
 else
 dist/${CND_CONF}/${IMAGE_TYPE}/Clock.X.${IMAGE_TYPE}.${OUTPUT_SUFFIX}: ${OBJECTFILES}  nbproject/Makefile-${CND_CONF}.mk   
 	${MKDIR} dist/${CND_CONF}/${IMAGE_TYPE} 
-	${MP_CC}  --debug-ralloc -Wl-c -Wl-m --use-non-free --pstack-model=small --opt-code-speed -mpic14 -p16f72 ${OBJECTFILES}  -odist/${CND_CONF}/${IMAGE_TYPE}/Clock.X.${IMAGE_TYPE}.${DEBUGGABLE_SUFFIX} 
+	${MP_CC}  --debug-ralloc -Wl-c -Wl-m --use-non-free --no-pcode-opt --pstack-model=small --opt-code-speed -mpic14 -p16f72 ${OBJECTFILES}  -odist/${CND_CONF}/${IMAGE_TYPE}/Clock.X.${IMAGE_TYPE}.${DEBUGGABLE_SUFFIX} 
 endif
 
 .pre:
 	@echo "--------------------------------------"
-	@echo "User defined pre-build step: [./generate_current_timestamp.py]"
-	@./generate_current_timestamp.py
+	@echo "User defined pre-build step: [${ProjectDir}/generate_current_timestamp.py]"
+	@${ProjectDir}/generate_current_timestamp.py
 	@echo "--------------------------------------"
 
 # Subprojects

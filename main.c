@@ -65,6 +65,10 @@ static __code unsigned short __at (_CONFIG) config_word = \
 
 #endif /* SDCC */
 
+/* CONSTANT TABLES */
+
+/* BCD to IO mapping tables */
+
 const unsigned char digit1[10][2] = {
     { 0b00011100, 0b00101100 },  /* 0 */
     { 0b00011000, 0b00000000 },  /* 1 */
@@ -119,8 +123,9 @@ const unsigned char digit4[10][2] = {
     { 0b00000, 0b00000 }  /* 9 */
 };
  
-
+/* GLOBAL VARIABLES */
 volatile unsigned char tmr1_ticked = 0;
+unsigned char display[4] = { 0 };
 
 #define TMR1H_RELOAD 0x80
 
@@ -181,6 +186,21 @@ void init()
 
 #define GET_LOOP_TICK (TMR1L & 0xC0)
 
+void toBcd(unsigned char n, unsigned char* bcd)
+{
+    bcd[0] = n / 10;
+    bcd[1] = n % 10;
+}
+
+void updateDisplayIOs(unsigned char toggle)
+{
+    PORTB = digit1[display[3]][toggle];
+    PORTB |= ((digit2[display[2]][toggle] & 0b111) << 5);
+    PORTCbits.RC3 = (digit2[display[2]][toggle] & 0b1000) ? 1 : 0;
+    PORTA  = digit3[display[1]][toggle] << 1;
+    PORTA |= digit4[display[0]][toggle] << 1;
+}
+
 /* Main program loop
  * 
  */
@@ -188,7 +208,7 @@ void main()
 {
     unsigned char loopCount = 0;
     unsigned long timestamp = BUILD_TIME_SINCE_MIDNIGHT;
-    unsigned char display[4] = { 0 };
+    
     unsigned char hours = 0;
     unsigned char minutes = 0;
     //unsigned char seconds = 0;
@@ -197,7 +217,7 @@ void main()
     unsigned char display_ticked = 0;
     unsigned char low_power_enable = 0;
 
-    long temp = 0;
+    unsigned long temp = 0;
     
     init();
     
@@ -234,7 +254,7 @@ void main()
                     break;
                     
                 case 1:
-                    temp = (timestamp - (hours * 3600l));
+                    temp = (timestamp % 3600l);
                     state = 2;
                     break;
                     
@@ -248,17 +268,22 @@ void main()
                     break;
 
                 case 3:
-                    display[0] = hours / 10;
-                    display[1] = hours % 10;
+                    toBcd(hours, &display[0]);
                     state = 4;
                     break;
                     
                 case 4:
-                    display[2] = minutes / 10;
-                    display[3] = minutes % 10;
-                    state = 0;
+                    toBcd(minutes, &display[2]);
+                    state = 5;
                     break;
-                    /* low_power_enable = (seconds >= 30) ? 1 : 0; */
+                    
+                case 5:
+                    // lower power mode between 12am to 5am
+                    if (hours < 5)
+                    {
+                        low_power_enable = 1;
+                    }
+                    break;
             }
         }
         
@@ -271,24 +296,16 @@ void main()
             if ((loopCount & 3) == 0)
             {
                 PORTCbits.RC4 = 0;
-
-                PORTB = digit1[display[3]][1];
-                PORTB |= ((digit2[display[2]][1] & 0b111) << 5);
-                PORTCbits.RC3 = (digit2[display[2]][1] & 0b1000) ? 1 : 0;
-                PORTA  = digit3[display[1]][1] << 1;
-                PORTA |= digit4[display[0]][1] << 1;
+                
+                updateDisplayIOs(1);
                 
                 PORTCbits.RC5 = 1;
             }
             else if ((loopCount & 3) == 2)
             {
                 PORTCbits.RC5 = 0;
-
-                PORTB  = digit1[display[3]][0];
-                PORTB |= ((digit2[display[2]][0] & 0b111) << 5);
-                PORTCbits.RC3 = (digit2[display[2]][0] & 0b1000) ? 1 : 0;
-                PORTA  = digit3[display[1]][0] << 1;
-                PORTA |= digit4[display[0]][0] << 1;
+                
+                updateDisplayIOs(0);
                 
                 PORTCbits.RC4 = 1;
             }
@@ -307,7 +324,7 @@ void main()
         
         CLRWDT();
     }
-    
+   
     return;
 }
 

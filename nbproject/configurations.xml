@@ -309,13 +309,13 @@
         </archiverTool>
         <loading>
           <useAlternateLoadableFile>false</useAlternateLoadableFile>
-          <parseOnProdLoad>false</parseOnProdLoad>
+          <parseOnProdLoad>true</parseOnProdLoad>
           <alternateLoadableFile></alternateLoadableFile>
         </loading>
       </compileType>
       <makeCustomizationType>
         <makeCustomizationPreStepEnabled>true</makeCustomizationPreStepEnabled>
-        <makeCustomizationPreStep>./generate_current_timestamp.py</makeCustomizationPreStep>
+        <makeCustomizationPreStep>${ProjectDir}/generate_current_timestamp.py</makeCustomizationPreStep>
         <makeCustomizationPostStepEnabled>false</makeCustomizationPostStepEnabled>
         <makeCustomizationPostStep></makeCustomizationPostStep>
         <makeCustomizationPutChecksumInUserID>false</makeCustomizationPutChecksumInUserID>
@@ -378,7 +378,7 @@
         <property key="extended" value="false"/>
         <property key="no-c-code-in-asm" value="false"/>
         <property key="no-optimize-goto" value="false"/>
-        <property key="no-pcode-opt" value="false"/>
+        <property key="no-pcode-opt" value="true"/>
         <property key="obanksel" value="0"/>
         <property key="optimize-cmp" value="false"/>
         <property key="optimize-df" value="false"/>
@@ -410,7 +410,7 @@
         </archiverTool>
         <loading>
           <useAlternateLoadableFile>false</useAlternateLoadableFile>
-          <parseOnProdLoad>false</parseOnProdLoad>
+          <parseOnProdLoad>true</parseOnProdLoad>
           <alternateLoadableFile></alternateLoadableFile>
         </loading>
       </compileType>
@@ -438,7 +438,7 @@
         <property key="extended" value="false"/>
         <property key="no-c-code-in-asm" value="false"/>
         <property key="no-optimize-goto" value="false"/>
-        <property key="no-pcode-opt" value="false"/>
+        <property key="no-pcode-opt" value="true"/>
         <property key="obanksel" value="0"/>
         <property key="optimize-cmp" value="false"/>
         <property key="optimize-df" value="false"/>
