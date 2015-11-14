@@ -18,7 +18,8 @@ enum button_ids
     BUTTON_1
 };
 
-#define BUTTON_SHORT_PRESS_COUNT 50
+#define BUTTON_DEASSERT_COUNT    50
+#define BUTTON_SHORT_PRESS_COUNT 200
 
 unsigned char button_update(unsigned char button1);
 

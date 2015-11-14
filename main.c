@@ -260,7 +260,7 @@ void main()
     {
         display_update();
         
-        switch (button_update(PORTCbits.RC2))
+        switch (button_update(!PORTCbits.RC2))
         {
             // BUTTON_1 adds 1 minute
             case BUTTON_1:

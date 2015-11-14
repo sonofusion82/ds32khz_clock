@@ -75,6 +75,7 @@ clean: .clean-post
 .clean-post: .clean-impl
 # Add your post 'clean' code here...
 	$(MAKE) -f $(CND_BASEDIR)/button_update_test.mk clean
+	rm -f current_timestamp.h
 
 
 # clobber

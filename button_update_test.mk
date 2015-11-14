@@ -11,4 +11,4 @@ button_update_test:button_update_test.c button_update.c
 
 .PHONY:clean
 clean:
-	rm -f button_update_test button_update_test.o button_update.o
+	rm -f button_update_test
