@@ -45,17 +45,17 @@ OBJECTDIR=build/${CND_CONF}/${IMAGE_TYPE}
 DISTDIR=dist/${CND_CONF}/${IMAGE_TYPE}
 
 # Source Files Quoted if spaced
-SOURCEFILES_QUOTED_IF_SPACED=main.c
+SOURCEFILES_QUOTED_IF_SPACED=main.c time_update.c button_update.c
 
 # Object Files Quoted if spaced
-OBJECTFILES_QUOTED_IF_SPACED=${OBJECTDIR}/main.o
-POSSIBLE_DEPFILES=${OBJECTDIR}/main.o.d
+OBJECTFILES_QUOTED_IF_SPACED=${OBJECTDIR}/main.o ${OBJECTDIR}/time_update.o ${OBJECTDIR}/button_update.o
+POSSIBLE_DEPFILES=${OBJECTDIR}/main.o.d ${OBJECTDIR}/time_update.o.d ${OBJECTDIR}/button_update.o.d
 
 # Object Files
-OBJECTFILES=${OBJECTDIR}/main.o
+OBJECTFILES=${OBJECTDIR}/main.o ${OBJECTDIR}/time_update.o ${OBJECTDIR}/button_update.o
 
 # Source Files
-SOURCEFILES=main.c
+SOURCEFILES=main.c time_update.c button_update.c
 
 
 CFLAGS=
@@ -98,11 +98,31 @@ ${OBJECTDIR}/main.o: main.c  nbproject/Makefile-${CND_CONF}.mk
 	${RM} ${OBJECTDIR}/main.o 
 	${MP_CC} --debug-ralloc --use-non-free --no-pcode-opt --pstack-model=small --opt-code-speed -c -mpic14 -p16f72 main.c  -o${OBJECTDIR}/main.o
 	
+${OBJECTDIR}/time_update.o: time_update.c  nbproject/Makefile-${CND_CONF}.mk
+	${MKDIR} ${OBJECTDIR} 
+	${RM} ${OBJECTDIR}/time_update.o 
+	${MP_CC} --debug-ralloc --use-non-free --no-pcode-opt --pstack-model=small --opt-code-speed -c -mpic14 -p16f72 time_update.c  -o${OBJECTDIR}/time_update.o
+	
+${OBJECTDIR}/button_update.o: button_update.c  nbproject/Makefile-${CND_CONF}.mk
+	${MKDIR} ${OBJECTDIR} 
+	${RM} ${OBJECTDIR}/button_update.o 
+	${MP_CC} --debug-ralloc --use-non-free --no-pcode-opt --pstack-model=small --opt-code-speed -c -mpic14 -p16f72 button_update.c  -o${OBJECTDIR}/button_update.o
+	
 else
 ${OBJECTDIR}/main.o: main.c  nbproject/Makefile-${CND_CONF}.mk
 	${MKDIR} ${OBJECTDIR} 
 	${RM} ${OBJECTDIR}/main.o 
 	${MP_CC} --debug-ralloc --use-non-free --no-pcode-opt --pstack-model=small --opt-code-speed -c -mpic14 -p16f72 main.c  -o${OBJECTDIR}/main.o
+	
+${OBJECTDIR}/time_update.o: time_update.c  nbproject/Makefile-${CND_CONF}.mk
+	${MKDIR} ${OBJECTDIR} 
+	${RM} ${OBJECTDIR}/time_update.o 
+	${MP_CC} --debug-ralloc --use-non-free --no-pcode-opt --pstack-model=small --opt-code-speed -c -mpic14 -p16f72 time_update.c  -o${OBJECTDIR}/time_update.o
+	
+${OBJECTDIR}/button_update.o: button_update.c  nbproject/Makefile-${CND_CONF}.mk
+	${MKDIR} ${OBJECTDIR} 
+	${RM} ${OBJECTDIR}/button_update.o 
+	${MP_CC} --debug-ralloc --use-non-free --no-pcode-opt --pstack-model=small --opt-code-speed -c -mpic14 -p16f72 button_update.c  -o${OBJECTDIR}/button_update.o
 	
 endif
 

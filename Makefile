@@ -55,6 +55,7 @@ build: .build-post
 
 .build-pre:
 # Add your pre 'build' code here...
+	$(MAKE) -f $(CND_BASEDIR)/button_update_test.mk
 
 .build-post: .build-impl
 # Add your post 'build' code here...
@@ -73,6 +74,7 @@ clean: .clean-post
 
 .clean-post: .clean-impl
 # Add your post 'clean' code here...
+	$(MAKE) -f $(CND_BASEDIR)/button_update_test.mk clean
 
 
 # clobber

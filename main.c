@@ -14,6 +14,9 @@
 #endif
 
 #include "current_timestamp.h"
+#include "time_update.h"
+#include "button_update.h"
+
 
 #ifdef __SDCC
 
@@ -127,8 +130,6 @@ const unsigned char digit4[10][2] = {
 volatile unsigned char tmr1_ticked = 0;
 unsigned char display[4] = { 0 };
 unsigned char display_ticked = 0;
-unsigned char hours = 0;
-unsigned char minutes = 0;
 unsigned char low_power_enable = 0;
 
 #define TMR1H_RELOAD 0x80
@@ -167,12 +168,8 @@ void init()
     PORTA = 0;
     TRISA = 0;
 
-    PORTCbits.RC3 = 0;
-    PORTCbits.RC4 = 0;
-    PORTCbits.RC5 = 0;
-    TRISCbits.TRISC5 = 0;
-    TRISCbits.TRISC4 = 0;
-    TRISCbits.TRISC3 = 0;
+    PORTC = 0;
+    TRISC = 0b11000111;
     
     /* TIMER 1 setting
      * pre-scale 1:1
@@ -192,102 +189,6 @@ void init()
 
 #define GET_LOOP_TICK (TMR1L & 0xC0)
 
-void toBcd(unsigned char n, unsigned char* bcd)
-{
-    unsigned char x = 0;
-    while (n >= 10)
-    {
-        x++;
-        n -= 10;
-    }
-    bcd[0] = x;
-    bcd[1] = n;
-}
-
-
-unsigned long timestamp = BUILD_TIME_SINCE_MIDNIGHT;
-unsigned int temp = 0;
-    
-/* Update time
- */
-void time_update()
-{
-    static unsigned char state = 0;
-    unsigned long temp32;
-    
-    /* Clock calculation block
-     * Uses a state machine to break the operation into smaller chunks to
-     * fix display flickering when calculation took too long and it impacts
-     * the display refresh periods
-     */
-    if (display_ticked)
-    {
-        display_ticked = 0;
-
-        switch (state)
-        {
-            default:
-            case 0:
-                if (tmr1_ticked)
-                {
-                    tmr1_ticked = 0;
-
-                    timestamp++;
-                    // 24 hour wrap around
-                    // 60 * 60 * 24
-                    if (timestamp >= 86400L)
-                    {
-                        timestamp = 0;
-                    }
-                    
-                    state = 1;
-                }
-                break;
-                
-            case 1:
-                temp32 = timestamp;
-                hours = 0;
-                while (temp32 >= 3600)
-                {
-                    hours++;
-                    temp32 -= 3600;
-                }
-                temp = temp32;
-                state = 2;
-                break;
-
-            case 2:
-                minutes = 0;
-                while (temp >= 60)
-                {
-                    minutes++;
-                    temp -= 60;
-                }
-                state = 3;
-                break;
-
-            case 3:
-                /* low power mode between 12am to 5am */
-                if (hours < 5)
-                {
-                    low_power_enable = 1;
-                }
-                /* display in 12 hour format */
-                if (hours > 12)
-                {
-                    hours = hours - 12;
-                }
-                toBcd(hours, &display[0]);
-                state = 4;
-                break;
-                
-            case 4:
-                toBcd(minutes, &display[2]);
-                state = 0;
-                break;
-        }
-    }
-}
 
 void updateDisplayIOs(unsigned char toggle)
 {
@@ -353,11 +254,26 @@ void main()
 {
     init();
     
+    timestamp = BUILD_TIME_SINCE_MIDNIGHT;
+    
     while (1)
     {
         display_update();
         
-        time_update();
+        switch (button_update(PORTCbits.RC2))
+        {
+            // BUTTON_1 adds 1 minute
+            case BUTTON_1:
+                timestamp += 60;
+                tmr1_ticked = 1; // force a time update
+                break;
+                
+            case BUTTON_NONE:
+            default:
+                break;
+        }
+        
+        time_update(display);
         
         CLRWDT();
     }
