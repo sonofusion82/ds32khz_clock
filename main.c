@@ -5,7 +5,7 @@
  * Created on September 20, 2015, 10:32 AM
  */
 
-#ifdef SDCC
+#ifdef __SDCC
 #define NO_BIT_DEFINES
 #include <pic16f72.h>
 #else
@@ -15,7 +15,7 @@
 
 #include "current_timestamp.h"
 
-#ifdef SDCC
+#ifdef __SDCC
 
 #ifdef __PIC16F876A_H__
 static __code unsigned short __at (_CONFIG) config_word = \
@@ -63,7 +63,7 @@ static __code unsigned short __at (_CONFIG) config_word = \
 #pragma config BOREN = OFF       // Brown-out Reset Enable bit (BOR disabled)
 #endif
 
-#endif /* SDCC */
+#endif /* __SDCC */
 
 /* CONSTANT TABLES */
 
@@ -126,13 +126,19 @@ const unsigned char digit4[10][2] = {
 /* GLOBAL VARIABLES */
 volatile unsigned char tmr1_ticked = 0;
 unsigned char display[4] = { 0 };
+unsigned char display_ticked = 0;
+unsigned char hours = 0;
+unsigned char minutes = 0;
+unsigned char low_power_enable = 0;
 
 #define TMR1H_RELOAD 0x80
 
 #ifdef SDCC
 
-#define CLRWDT()  __asm clrwdt __endasm
-#define ei()  INTCONbits.GIE = 1
+// clear watchdog macro
+#define CLRWDT()  __asm__( "clrwdt" );
+// enable interrupt
+#define ei()  (INTCONbits.GIE = 1)
 
 static void interupt_service_routine (void) __interrupt 0
 #else
@@ -192,6 +198,79 @@ void toBcd(unsigned char n, unsigned char* bcd)
     bcd[1] = n % 10;
 }
 
+/* Update time
+ */
+void time_update()
+{
+    static unsigned char state = 0;
+    unsigned long timestamp = BUILD_TIME_SINCE_MIDNIGHT;
+    unsigned long temp = 0;
+    
+    /* Clock calculation block
+     * Uses a state machine to break the operation into smaller chunks to
+     * fix display flickering when calculation took too long and it impacts
+     * the display refresh periods
+     */
+    if (display_ticked)
+    {
+        display_ticked = 0;
+
+        switch (state)
+        {
+            default:
+            case 0:
+                if (tmr1_ticked)
+                {
+                    tmr1_ticked = 0;
+
+                    timestamp++;
+                    // 24 hour wrap around
+                    // 60 * 60 * 24
+                    if (timestamp > 86400l)
+                    {
+                        timestamp = 0;
+                    }
+
+                    hours   = (timestamp / 3600);
+                    state = 1;
+                }
+                break;
+
+            case 1:
+                temp = (timestamp % 3600l);
+                state = 2;
+                break;
+
+            case 2:
+                minutes =  temp / 60;
+
+                /* display in 12 hour format */
+                if (hours > 12)
+                    hours = hours - 12;
+                state = 3;
+                break;
+
+            case 3:
+                toBcd(hours, &display[0]);
+                state = 4;
+                break;
+
+            case 4:
+                toBcd(minutes, &display[2]);
+                state = 5;
+                break;
+
+            case 5:
+                // lower power mode between 12am to 5am
+                if (hours < 5)
+                {
+                    low_power_enable = 1;
+                }
+                break;
+        }
+    }
+}
+
 void updateDisplayIOs(unsigned char toggle)
 {
     PORTB = digit1[display[3]][toggle];
@@ -201,126 +280,60 @@ void updateDisplayIOs(unsigned char toggle)
     PORTA |= digit4[display[0]][toggle] << 1;
 }
 
+void display_update(unsigned char *loopCount)
+{
+    static unsigned char loopTicks = GET_LOOP_TICK;
+    
+    /* Display block */
+    if (loopTicks != GET_LOOP_TICK)
+    {
+        *loopCount++;
+        loopTicks = GET_LOOP_TICK;
+
+        if ((*loopCount & 3) == 0)
+        {
+            PORTCbits.RC4 = 0;
+
+            updateDisplayIOs(1);
+
+            PORTCbits.RC5 = 1;
+        }
+        else if ((*loopCount & 3) == 2)
+        {
+            PORTCbits.RC5 = 0;
+
+            updateDisplayIOs(0);
+
+            PORTCbits.RC4 = 1;
+        }
+        else if (low_power_enable)
+        {
+            PORTB = 0;
+            PORTA = 0;
+            PORTCbits.RC3 = 0;
+        }
+
+        /* Blink the center colon LEDs */
+        PORTBbits.RB1 = (TMR1H & 0b01000000) ? 0 : 1;
+
+        display_ticked = 1;
+    }
+}
+
 /* Main program loop
  * 
  */
 void main()
 {
     unsigned char loopCount = 0;
-    unsigned long timestamp = BUILD_TIME_SINCE_MIDNIGHT;
-    
-    unsigned char hours = 0;
-    unsigned char minutes = 0;
-    //unsigned char seconds = 0;
-    unsigned char loopTicks = GET_LOOP_TICK;
-    unsigned char state = 0;
-    unsigned char display_ticked = 0;
-    unsigned char low_power_enable = 0;
-
-    unsigned long temp = 0;
     
     init();
     
     while (1)
     {
-        /* Clock calculation block
-         * Uses a state machine to break the operation into smaller chunks to
-         * fix display flickering when calculation took too long and it impacts
-         * the display refresh periods
-         */
-        if (display_ticked)
-        {
-            display_ticked = 0;
-            
-            switch (state)
-            {
-                default:
-                case 0:
-                    if (tmr1_ticked)
-                    {
-                        tmr1_ticked = 0;
-                        
-                        timestamp++;
-                        // 24 hour wrap around
-                        // 60 * 60 * 24
-                        if (timestamp > 86400l)
-                        {
-                            timestamp = 0;
-                        }
-                        
-                        hours   = (timestamp / 3600);
-                        state = 1;
-                    }
-                    break;
-                    
-                case 1:
-                    temp = (timestamp % 3600l);
-                    state = 2;
-                    break;
-                    
-                case 2:
-                    minutes =  temp / 60;
-
-                    /* display in 12 hour format */
-                    if (hours > 12)
-                        hours = hours - 12;
-                    state = 3;
-                    break;
-
-                case 3:
-                    toBcd(hours, &display[0]);
-                    state = 4;
-                    break;
-                    
-                case 4:
-                    toBcd(minutes, &display[2]);
-                    state = 5;
-                    break;
-                    
-                case 5:
-                    // lower power mode between 12am to 5am
-                    if (hours < 5)
-                    {
-                        low_power_enable = 1;
-                    }
-                    break;
-            }
-        }
+        time_update();
         
-        /* Display block */
-        if (loopTicks != GET_LOOP_TICK)
-        {
-            loopCount++;
-            loopTicks = GET_LOOP_TICK;
-            
-            if ((loopCount & 3) == 0)
-            {
-                PORTCbits.RC4 = 0;
-                
-                updateDisplayIOs(1);
-                
-                PORTCbits.RC5 = 1;
-            }
-            else if ((loopCount & 3) == 2)
-            {
-                PORTCbits.RC5 = 0;
-                
-                updateDisplayIOs(0);
-                
-                PORTCbits.RC4 = 1;
-            }
-            else if (low_power_enable)
-            {
-                PORTB = 0;
-                PORTA = 0;
-                PORTCbits.RC3 = 0;
-            }
-
-            /* Blink the center colon LEDs */
-            PORTBbits.RB1 = (TMR1H & 0b01000000) ? 0 : 1;
-            
-            display_ticked = 1;
-        }
+        display_update(&loopCount);
         
         CLRWDT();
     }
