@@ -97,30 +97,30 @@ const unsigned char digit2[10][2] = {
 };
 
 const unsigned char digit3[10][2] = {
-    { 0b0111, 0b1011 }, /* 0 */
-    { 0b0110, 0b0000 }, /* 1 */
-    { 0b0101, 0b1110 }, /* 2 */
-    { 0b0111, 0b0110 }, /* 3 */
-    { 0b0110, 0b0101 }, /* 4 */
-    { 0b0011, 0b0111 }, /* 5 */
-    { 0b0011, 0b1111 }, /* 6 */
-    { 0b0111, 0b0000 }, /* 7 */
-    { 0b0111, 0b1111 }, /* 8 */
-    { 0b0111, 0b0111 }  /* 9 */
+    { 0b01110, 0b10110 }, /* 0 */
+    { 0b01100, 0b00000 }, /* 1 */
+    { 0b01010, 0b11100 }, /* 2 */
+    { 0b01110, 0b01100 }, /* 3 */
+    { 0b01100, 0b01010 }, /* 4 */
+    { 0b00110, 0b01110 }, /* 5 */
+    { 0b00110, 0b11110 }, /* 6 */
+    { 0b01110, 0b00000 }, /* 7 */
+    { 0b01110, 0b11110 }, /* 8 */
+    { 0b01110, 0b01110 }  /* 9 */
 };
 
 
 const unsigned char digit4[10][2] = {
-    { 0b00000, 0b00000 }, /* 0 */
-    { 0b11000, 0b00000 }, /* 1 */
-    { 0b00000, 0b00000 }, /* 2 */
-    { 0b00000, 0b00000 }, /* 3 */
-    { 0b00000, 0b00000 }, /* 4 */
-    { 0b00000, 0b00000 }, /* 5 */
-    { 0b00000, 0b00000 }, /* 6 */
-    { 0b00000, 0b00000 }, /* 7 */
-    { 0b00000, 0b00000 }, /* 8 */
-    { 0b00000, 0b00000 }  /* 9 */
+    { 0b000000, 0b000000 }, /* 0 */
+    { 0b110000, 0b000000 }, /* 1 */
+    { 0b000000, 0b000000 }, /* 2 */
+    { 0b000000, 0b000000 }, /* 3 */
+    { 0b000000, 0b000000 }, /* 4 */
+    { 0b000000, 0b000000 }, /* 5 */
+    { 0b000000, 0b000000 }, /* 6 */
+    { 0b000000, 0b000000 }, /* 7 */
+    { 0b000000, 0b000000 }, /* 8 */
+    { 0b000000, 0b000000 }  /* 9 */
 };
  
 /* GLOBAL VARIABLES */
@@ -130,6 +130,7 @@ unsigned char display_ticked = 0;
 unsigned char hours = 0;
 unsigned char minutes = 0;
 unsigned char low_power_enable = 0;
+unsigned char loopCount = 0;
 
 #define TMR1H_RELOAD 0x80
 
@@ -194,18 +195,25 @@ void init()
 
 void toBcd(unsigned char n, unsigned char* bcd)
 {
-    bcd[0] = n / 10;
-    bcd[1] = n % 10;
+    unsigned char x = 0;
+    while (n >= 10)
+    {
+        x++;
+        n -= 10;
+    }
+    bcd[0] = x;
+    bcd[1] = n;
 }
 
+unsigned char state = 0;
+unsigned long timestamp = BUILD_TIME_SINCE_MIDNIGHT;
+unsigned int temp = 0;
+    
 /* Update time
  */
 void time_update()
 {
-    static unsigned char state = 0;
-    unsigned long timestamp = BUILD_TIME_SINCE_MIDNIGHT;
-    unsigned long temp = 0;
-    
+    unsigned long temp32;
     /* Clock calculation block
      * Uses a state machine to break the operation into smaller chunks to
      * fix display flickering when calculation took too long and it impacts
@@ -226,46 +234,55 @@ void time_update()
                     timestamp++;
                     // 24 hour wrap around
                     // 60 * 60 * 24
-                    if (timestamp > 86400l)
+                    if (timestamp >= 86400L)
                     {
                         timestamp = 0;
                     }
-
-                    hours   = (timestamp / 3600);
+                    
                     state = 1;
                 }
                 break;
-
+                
             case 1:
-                temp = (timestamp % 3600l);
+                temp32 = timestamp;
+                hours = 0;
+                while (temp32 >= 3600)
+                {
+                    hours++;
+                    temp32 -= 3600;
+                }
+                temp = temp32;
                 state = 2;
                 break;
 
             case 2:
-                minutes =  temp / 60;
-
-                /* display in 12 hour format */
-                if (hours > 12)
-                    hours = hours - 12;
+                minutes = 0;
+                while (temp >= 60)
+                {
+                    minutes++;
+                    temp -= 60;
+                }
                 state = 3;
                 break;
 
             case 3:
-                toBcd(hours, &display[0]);
-                state = 4;
-                break;
-
-            case 4:
-                toBcd(minutes, &display[2]);
-                state = 5;
-                break;
-
-            case 5:
-                // lower power mode between 12am to 5am
-                if (timestamp < (5 * 3600L))
+                /* low power mode between 12am to 5am */
+                if (hours < 5)
                 {
                     low_power_enable = 1;
                 }
+                /* display in 12 hour format */
+                if (hours > 12)
+                {
+                    hours = hours - 12;
+                }
+                toBcd(hours, &display[0]);
+                state = 4;
+                break;
+                
+            case 4:
+                toBcd(minutes, &display[2]);
+                state = 0;
                 break;
         }
     }
@@ -273,24 +290,26 @@ void time_update()
 
 void updateDisplayIOs(unsigned char toggle)
 {
-    PORTB = digit1[display[3]][toggle];
+    PORTB  = digit1[display[3]][toggle];
     PORTB |= ((digit2[display[2]][toggle] & 0b111) << 5);
+    
     PORTCbits.RC3 = (digit2[display[2]][toggle] & 0b1000) ? 1 : 0;
-    PORTA  = digit3[display[1]][toggle] << 1;
-    PORTA |= digit4[display[0]][toggle] << 1;
+    
+    PORTA  = digit3[display[1]][toggle];
+    PORTA |= digit4[display[0]][toggle];
 }
 
-void display_update(unsigned char *loopCount)
+void display_update()
 {
-    static unsigned char loopTicks = GET_LOOP_TICK;
+    unsigned char loopTicks = 0;
     
     /* Display block */
     if (loopTicks != GET_LOOP_TICK)
     {
-        *loopCount++;
+        loopCount++;
         loopTicks = GET_LOOP_TICK;
 
-        if ((*loopCount & 3) == 0)
+        if ((loopCount & 3) == 0)
         {
             PORTCbits.RC4 = 0;
 
@@ -298,7 +317,7 @@ void display_update(unsigned char *loopCount)
 
             PORTCbits.RC5 = 1;
         }
-        else if ((*loopCount & 3) == 2)
+        else if ((loopCount & 3) == 2)
         {
             PORTCbits.RC5 = 0;
 
@@ -325,15 +344,13 @@ void display_update(unsigned char *loopCount)
  */
 void main()
 {
-    unsigned char loopCount = 0;
-    
     init();
     
     while (1)
     {
-        time_update();
+        display_update();
         
-        display_update(&loopCount);
+        time_update();
         
         CLRWDT();
     }
