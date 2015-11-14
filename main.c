@@ -130,7 +130,6 @@ unsigned char display_ticked = 0;
 unsigned char hours = 0;
 unsigned char minutes = 0;
 unsigned char low_power_enable = 0;
-unsigned char loopCount = 0;
 
 #define TMR1H_RELOAD 0x80
 
@@ -205,7 +204,7 @@ void toBcd(unsigned char n, unsigned char* bcd)
     bcd[1] = n;
 }
 
-unsigned char state = 0;
+
 unsigned long timestamp = BUILD_TIME_SINCE_MIDNIGHT;
 unsigned int temp = 0;
     
@@ -213,7 +212,9 @@ unsigned int temp = 0;
  */
 void time_update()
 {
+    static unsigned char state = 0;
     unsigned long temp32;
+    
     /* Clock calculation block
      * Uses a state machine to break the operation into smaller chunks to
      * fix display flickering when calculation took too long and it impacts
@@ -297,11 +298,15 @@ void updateDisplayIOs(unsigned char toggle)
     
     PORTA  = digit3[display[1]][toggle];
     PORTA |= digit4[display[0]][toggle];
+    
+    /* Blink the center colon LEDs */
+    PORTBbits.RB1 = (TMR1H & 0b01000000) ? 0 : 1;
 }
 
 void display_update()
 {
-    unsigned char loopTicks = 0;
+    static unsigned char loopTicks = 0;
+    static unsigned char loopCount = 0;
     
     /* Display block */
     if (loopTicks != GET_LOOP_TICK)
@@ -316,6 +321,8 @@ void display_update()
             updateDisplayIOs(1);
 
             PORTCbits.RC5 = 1;
+            
+            display_ticked = 1;
         }
         else if ((loopCount & 3) == 2)
         {
@@ -324,18 +331,18 @@ void display_update()
             updateDisplayIOs(0);
 
             PORTCbits.RC4 = 1;
+            
+            display_ticked = 1;
         }
         else if (low_power_enable)
         {
+            PORTCbits.RC4 = 0;
+            PORTCbits.RC5 = 0;
             PORTB = 0;
             PORTA = 0;
             PORTCbits.RC3 = 0;
         }
-
-        /* Blink the center colon LEDs */
-        PORTBbits.RB1 = (TMR1H & 0b01000000) ? 0 : 1;
-
-        display_ticked = 1;
+        
     }
 }
 
