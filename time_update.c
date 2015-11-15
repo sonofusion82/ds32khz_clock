@@ -17,7 +17,7 @@ unsigned int temp = 0;
  * 
  * NOTE: it assumes n is less than 100
  */
-void toBcd(unsigned char n, unsigned char* bcd)
+static void toBcd(unsigned char n, unsigned char* bcd)
 {
     unsigned char x = 0;
     while (n >= 10)

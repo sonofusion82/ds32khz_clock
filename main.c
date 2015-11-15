@@ -155,7 +155,7 @@ void interrupt interupt_service_routine(void)
     }
 }
 
-void init()
+static void init()
 {
     /* Initialize GPIOs */
     PORTB = 0;
@@ -190,7 +190,7 @@ void init()
 #define GET_LOOP_TICK (TMR1L & 0xC0)
 
 
-void updateDisplayIOs(unsigned char toggle)
+static void updateDisplayIOs(unsigned char toggle)
 {
     PORTB  = digit1[display[3]][toggle];
     PORTB |= ((digit2[display[2]][toggle] & 0b111) << 5);
@@ -204,7 +204,7 @@ void updateDisplayIOs(unsigned char toggle)
     PORTBbits.RB1 = (TMR1H & 0b01000000) ? 0 : 1;
 }
 
-void display_update()
+static void display_update()
 {
     static unsigned char loopTicks = 0;
     static unsigned char loopCount = 0;
