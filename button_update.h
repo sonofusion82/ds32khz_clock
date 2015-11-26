@@ -15,11 +15,13 @@ extern "C" {
 enum button_ids
 {
     BUTTON_NONE,
-    BUTTON_1
+    BUTTON_1,
+    BUTTON_2
 };
 
 #define BUTTON_DEASSERT_COUNT    50
 #define BUTTON_SHORT_PRESS_COUNT 200
+#define BUTTON_LONG_PRESS_COUNT  3000
 
 unsigned char button_update(unsigned char button1);
 

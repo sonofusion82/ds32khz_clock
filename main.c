@@ -267,6 +267,12 @@ void main()
                 timestamp += 60;
                 tmr1_ticked = 1; // force a time update
                 break;
+
+            // BUTTON_2 adds 1 hour
+            case BUTTON_2:
+                timestamp += 3600L;
+                tmr1_ticked = 1; // force a time update
+                break;
                 
             case BUTTON_NONE:
             default:

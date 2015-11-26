@@ -6,7 +6,7 @@
  */
 #include "button_update.h"
 
-unsigned char button_1_loop = 0;
+unsigned short button_1_loop = 0;
 unsigned char button_1_state = 0;
 /*
  * 
@@ -15,7 +15,7 @@ unsigned char button_update(unsigned char button1)
 {
     unsigned char retval = BUTTON_NONE;
 
-    if (button_1_loop < 255)
+    if (button_1_loop < 0xFFFF)
     {
         button_1_loop++;
     }
@@ -38,6 +38,7 @@ unsigned char button_update(unsigned char button1)
                 if (button_1_loop == BUTTON_SHORT_PRESS_COUNT)
                 {
                     button_1_state = 2;
+                    button_1_loop = 0;
                     retval = BUTTON_1;
                 }
             }
@@ -52,6 +53,11 @@ unsigned char button_update(unsigned char button1)
             {
                 button_1_state = 3;
                 button_1_loop = 1;
+            }
+            else if (button_1_loop == BUTTON_LONG_PRESS_COUNT)
+            {
+                button_1_loop = 0;
+                retval = BUTTON_2;
             }
             break;
 

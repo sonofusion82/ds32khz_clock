@@ -168,8 +168,8 @@ endif
 
 .pre:
 	@echo "--------------------------------------"
-	@echo "User defined pre-build step: [./generate_current_timestamp.py]"
-	@./generate_current_timestamp.py
+	@echo "User defined pre-build step: [${ProjectDir}/generate_current_timestamp.py]"
+	@${ProjectDir}/generate_current_timestamp.py
 	@echo "--------------------------------------"
 
 # Subprojects
