@@ -254,7 +254,9 @@ void main()
 {
     init();
     
-    timestamp = BUILD_TIME_SINCE_MIDNIGHT;
+    hours   = (BUILD_TIME_SINCE_MIDNIGHT / 3600L);
+    minutes = (BUILD_TIME_SINCE_MIDNIGHT % 3600L) / 60;
+    seconds = (BUILD_TIME_SINCE_MIDNIGHT % 60);
     
     while (1)
     {
@@ -264,13 +266,15 @@ void main()
         {
             // BUTTON_1 adds 1 minute
             case BUTTON_1:
-                timestamp += 60;
+                incrementMinute();
+                seconds = 0;
                 tmr1_ticked = 1; // force a time update
                 break;
 
             // BUTTON_2 adds 1 hour
             case BUTTON_2:
-                timestamp += 3600L;
+                incrementHour();
+                seconds = 0;
                 tmr1_ticked = 1; // force a time update
                 break;
                 

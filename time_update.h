@@ -14,9 +14,12 @@ extern "C" {
     
 extern unsigned char hours;
 extern unsigned char minutes;
-extern unsigned long timestamp; /* timestamp in seconds since midnight */
+extern unsigned char seconds;
 
 void time_update(unsigned char *bcdTime);
+
+void incrementMinute();
+void incrementHour();
 
 #ifdef	__cplusplus
 }

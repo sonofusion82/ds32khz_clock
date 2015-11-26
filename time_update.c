@@ -5,12 +5,14 @@
  * Created on November 15, 2015, 12:07 AM
  */
 
+#include "time_update.h"
+
 extern volatile unsigned char tmr1_ticked;
 extern unsigned char display_ticked;
 extern unsigned char low_power_enable;
 unsigned char hours = 0;
 unsigned char minutes = 0;
-unsigned long timestamp = 0;
+unsigned char seconds = 0;
 unsigned int temp = 0;
 
 /* unsigned char to 2 byte BCD
@@ -29,13 +31,32 @@ static void toBcd(unsigned char n, unsigned char* bcd)
     bcd[1] = n;
 }
 
+void incrementMinute()
+{
+    minutes++;
+    if (minutes >= 60)
+    {
+        minutes = 0;
+        incrementHour();
+    }
+}
+
+void incrementHour()
+{
+    hours++;
+    if (hours >= 24)
+    {
+        hours = 0;
+    }
+}
+
     
 /* Update time
  */
 void time_update(unsigned char *bcdTime)
 {
     static unsigned char state = 0;
-    unsigned long temp32;
+    unsigned char temp_hours;
     
     /* Clock calculation block
      * Uses a state machine to break the operation into smaller chunks to
@@ -53,57 +74,31 @@ void time_update(unsigned char *bcdTime)
                 if (tmr1_ticked)
                 {
                     tmr1_ticked = 0;
-
-                    timestamp++;
-                    // 24 hour wrap around
-                    // 60 * 60 * 24
-                    if (timestamp >= 86400L)
-                    {
-                        timestamp = 0;
-                    }
                     
+                    seconds++;
+                    if (seconds >= 60)
+                    {
+                        seconds = 0;
+                        incrementMinute();
+                    }
+
                     state = 1;
                 }
                 break;
                 
             case 1:
-                temp32 = timestamp;
-                hours = 0;
-                while (temp32 >= 3600)
-                {
-                    hours++;
-                    temp32 -= 3600;
-                }
-                temp = temp32;
-                state = 2;
-                break;
-
-            case 2:
-                minutes = 0;
-                while (temp >= 60)
-                {
-                    minutes++;
-                    temp -= 60;
-                }
-                state = 3;
-                break;
-
-            case 3:
                 /* low power mode between 12am to 5am */
                 /*if (hours < 5)
                 {
                     low_power_enable = 1;
                 }*/
                 /* display in 12 hour format */
-                if (hours > 12)
-                {
-                    hours = hours - 12;
-                }
-                toBcd(hours, &bcdTime[0]);
-                state = 4;
+                temp_hours = (hours > 12) ? (hours - 12) : hours;
+                toBcd(temp_hours, &bcdTime[0]);
+                state = 2;
                 break;
                 
-            case 4:
+            case 2:
                 toBcd(minutes, &bcdTime[2]);
                 state = 0;
                 break;
